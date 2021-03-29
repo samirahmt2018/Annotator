@@ -176,6 +176,9 @@ label_color="green"
 active_pane=0
 filename_l=None
 filename_r=None
+labels={0,1,2,3}
+label_names={"Benign Mass","Malignant Mass","Benign Calcification", "Malignant Calcification"}
+label_colors={"green","yellow","orange", "cyan"}
 root = tk.Tk()
 w, h = root.winfo_screenwidth(), root.winfo_screenheight()
 root.geometry("%dx%d+0+0" % (w, h))
@@ -201,10 +204,8 @@ menubar.add_cascade(label="File", menu=filemenu)
 labelmenu = tk.Menu(menubar, tearoff=0)
 label_color="green"
 active_pane=0
-labelmenu.add_command(label="Benign Mass", background="green", command=partial(change_label,'green',0))
-labelmenu.add_command(label="Malignant Mass", background="yellow", command=partial(change_label,'yellow',1))
-labelmenu.add_command(label="Benign Calcification",background="orange", command=partial(change_label,'orange',2))
-labelmenu.add_command(label="Malignant Calcification",background="cyan", command=partial(change_label,'cyan',3))
+for i in len(labels):
+    labelmenu.add_command(label=label_names[i], background=label_colors[i], command=partial(change_label,label_colors[i],labels[i]))
 menubar.add_cascade(label="Change Label", menu=labelmenu)
 helpmenu = tk.Menu(menubar, tearoff=0)
 helpmenu.add_command(label="Help Index", command=donothing)

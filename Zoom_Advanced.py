@@ -35,7 +35,7 @@ class Zoom_Advanced(ttk.Frame):
     list_of_points=[]
     annotations=[]
     current_label=0
-    current_label=1
+    current_label_name=""
     label_color="green"
     container=None
     imscale=1
@@ -247,26 +247,4 @@ class Zoom_Advanced(ttk.Frame):
         else:
             print('dot')
 
-    def convert_image(self,input_file_name):
-        try:
-            image_file_reader = sitk.ImageFileReader()
-            # only read DICOM images
-            image_file_reader.SetImageIO('GDCMImageIO')
-            image_file_reader.SetFileName(input_file_name)
-            image_file_reader.ReadImageInformation()
-            image_size = list(image_file_reader.GetSize())
-            if len(image_size) == 3 and image_size[2] == 1:
-                image_size[2] = 0
-            image_file_reader.SetExtractSize(image_size)
-            image = image_file_reader.Execute()
-            
-            if image.GetNumberOfComponentsPerPixel() == 1:
-                image = sitk.RescaleIntensity(image, 0, 255)
-                if image_file_reader.GetMetaData('0028|0004').strip() \
-                        == 'MONOCHROME1':
-                    image = sitk.InvertIntensity(image, maximum=255)
-                image = sitk.Cast(image, sitk.sitkUInt8)
-           
-            return image
-        except BaseException:
-            return False
+    
