@@ -14,3 +14,4 @@ How to use:
   6. Return to approve annotations
   7. Finall from file select Save annotations to save the Annotation in both json and Mask format
   
+![GitHub Logo](/ann.png)
