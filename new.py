@@ -2,6 +2,7 @@
 # Advanced zoom example. Like in Google Maps.
 # It zooms only a tile, but not the whole image. So the zoomed tile occupies
 # constant memory and not crams it with a huge resized image for the large zooms.
+from __future__ import annotations
 import random
 import tkinter as tk
 from tkinter import Event, ttk
@@ -14,6 +15,7 @@ import skimage.io as io
 import matplotlib.pyplot as plt
 import numpy as np
 import Zoom_Advanced
+import cv2
 def key_func(current_frame, key_pressed,params):
     scale, x_shift, y_shift=params
     if(key_pressed=="BackSpace"):
@@ -52,7 +54,7 @@ def key_func(current_frame, key_pressed,params):
     if(key_pressed=="Return"):
         print("Left Return was pressed")
         current_frame.canvas.delete('points')
-        current_frame.annotations.append(({'label':current_frame.current_label,'poly':current_frame.list_of_points}))
+        current_frame.annotations.append(({'width':current_frame.width,'height': current_frame.height,'label_name':current_frame.current_label_name,'label':current_frame.current_label,'poly':current_frame.list_of_points}))
         list_of_points2=[]
         for pt in current_frame.list_of_points:
             x, y =  pt
@@ -60,13 +62,7 @@ def key_func(current_frame, key_pressed,params):
             y=y*scale+y_shift
             list_of_points2.append((x,y))
         current_frame.canvas.create_polygon(list_of_points2, fill='', outline=current_frame.label_color, width=2,tags=('final_polygon'))
-        
-        #current_frame.canvas.coords(current_frame.poly,)
         current_frame.list_of_points=[]
-        print(json.dumps(current_frame.annotations))
-    
-    #print(event.keysym)
-    #print("pressed", repr(event.char))
 def key(event):
         #print(app.canvas.bbox(app.container))
         #print(app2.canvas.bbox(app2.container))
@@ -156,6 +152,18 @@ def get_LUT_value(data, window, level):
 def savejson():
     #print(filename_l)
     #print(filename_r)
+    
+    #annotation=np.zeros(annotations[0].height, annotations[0].width)
+    #print(app.annotations[0])
+    #print(app.annotations[0]['height'])
+    print(app.annotations[0]['height'], app.annotations[0]['width'])
+    mask=np.zeros((app.annotations[0]['height'], app.annotations[0]['width'],3))
+    
+    for i in range(len(app.annotations)):
+        #print(list(app.annotations[i]['poly']))
+        poly=np.array(app.annotations[i]['poly'], np.int32)
+        cv2.fillPoly(mask, [poly], label_colors2[app.current_label])
+    cv2.imwrite(app2.path+".png",mask,cv2.COLOR_RGB2BGR)
     with open(app.path+'.json', 'w') as f:
         json.dump(app.annotations, f, indent=4)
     with open(app2.path+'.json', 'w') as f:
@@ -164,11 +172,15 @@ def donothing():
     filewin = tk.Toplevel(root)
     button = tk.Button(filewin, text="Do nothing button")
     button.pack()
-def change_label(lcolor, label):
+def change_label(lcolor, label,name):
     app.label_color=lcolor
     app2.label_color=lcolor
+
     app.current_label=label
     app2.current_label=label
+
+    app.current_label_name=name
+    app2.current_label_name=name
        
 path = 'M13.jpg'  # place path to your image here
 current_label=0
@@ -176,9 +188,11 @@ label_color="green"
 active_pane=0
 filename_l=None
 filename_r=None
-labels={0,1,2,3}
-label_names={"Benign Mass","Malignant Mass","Benign Calcification", "Malignant Calcification"}
-label_colors={"green","yellow","orange", "cyan"}
+labels=[0,1,2,3]
+label_names=["Benign Mass","Malignant Mass","Benign Calcification", "Malignant Calcification"]
+label_colors=["green","yellow","orange", "cyan"]
+label_colors2=[(0,255,0),(255,255,0),(255,200,0),(100,110,100)]
+
 root = tk.Tk()
 w, h = root.winfo_screenwidth(), root.winfo_screenheight()
 root.geometry("%dx%d+0+0" % (w, h))
@@ -204,8 +218,9 @@ menubar.add_cascade(label="File", menu=filemenu)
 labelmenu = tk.Menu(menubar, tearoff=0)
 label_color="green"
 active_pane=0
-for i in len(labels):
-    labelmenu.add_command(label=label_names[i], background=label_colors[i], command=partial(change_label,label_colors[i],labels[i]))
+for i in range(len(labels)):
+    #print(label_names[i])
+    labelmenu.add_command(label=label_names[i], background=label_colors[i], command=partial(change_label,label_colors[i],labels[i],label_names[i]))
 menubar.add_cascade(label="Change Label", menu=labelmenu)
 helpmenu = tk.Menu(menubar, tearoff=0)
 helpmenu.add_command(label="Help Index", command=donothing)

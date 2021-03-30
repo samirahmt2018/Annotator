@@ -11,6 +11,7 @@ import skimage.io as io
 import matplotlib.pyplot as plt
 import numpy as np
 import pydicom
+import math
 
 class AutoScrollbar(ttk.Scrollbar):
     ''' A scrollbar that hides itself if it's not needed.
@@ -41,6 +42,8 @@ class Zoom_Advanced(ttk.Frame):
     imscale=1
     image=None
     delta=1.3
+    width=None
+    height=None
     path=""
     def __init__(self, mainframe):
         ttk.Frame.__init__(self, master=mainframe)
@@ -218,8 +221,8 @@ class Zoom_Advanced(ttk.Frame):
         scale=im_h*im_w/(ori_h*ori_w)
         #print(canvas_w,canvas_height)
         #print(self.list_of_points)
-        ac_x=(x-x_shift)/self.imscale
-        ac_y=(y-y_shift)/self.imscale
+        ac_x=math.floor((x-x_shift)/self.imscale)
+        ac_y=math.floor((y-y_shift)/self.imscale)
         #x=(x-x_shift)/scale
         #y=(y-y_shift)/scale
         # print(x,y)
