@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pydicom
 import math
+from pydicom.pixel_data_handlers.util import apply_voi_lut
 
 class AutoScrollbar(ttk.Scrollbar):
     ''' A scrollbar that hides itself if it's not needed.
@@ -37,10 +38,14 @@ class Zoom_Advanced(ttk.Frame):
     annotations=[]
     current_label=0
     current_label_name=""
-    label_color="green"
+    label_color="gray"
+    dash_type=(10,1)
+    birads_level=1
+    birads_level_name="Bi-RADS 1"
     container=None
     imscale=1
     image=None
+    age=0
     delta=1.3
     width=None
     height=None
@@ -53,6 +58,7 @@ class Zoom_Advanced(ttk.Frame):
         hbar.grid(row=1, column=0, sticky='we')
         self.imscale=1
         self.image=None
+        self.age=0
         self.list_of_points=[]
         self.annotations=[]
         #self.imscale = 1.0  # scale for the canvaas image
@@ -70,7 +76,35 @@ class Zoom_Advanced(ttk.Frame):
         self.master.rowconfigure(0, weight=1)
         self.master.columnconfigure(0, weight=1)
         # Bind events to the Canvas
-        
+        self.frame_position="UNKNOWN"
+    def reset(self, mainframe):
+        ttk.Frame.__init__(self, master=mainframe)
+        vbar = AutoScrollbar(self.master, orient='vertical')
+        hbar = AutoScrollbar(self.master, orient='horizontal')
+        vbar.grid(row=0, column=1, sticky='ns')
+        hbar.grid(row=1, column=0, sticky='we')
+        self.imscale=1
+        self.image=None
+        self.age=0
+        self.list_of_points=[]
+        self.annotations=[]
+        #self.imscale = 1.0  # scale for the canvaas image
+        self.delta = 1.3  # zoom magnitude
+        # Create canvas and put image on it
+        self.canvas = tk.Canvas(self.master, highlightthickness=0,
+                                xscrollcommand=hbar.set, yscrollcommand=vbar.set)
+        self.canvas.grid(row=0, column=0, sticky='nswe')
+        self.canvas.update()  # wait till canvas is created
+        self.width, self.height=self.master.winfo_screenmmwidth()/2,self.master.winfo_screenmmheight()
+        self.container = self.canvas.create_rectangle(0, 0, self.width, self.height, width=0)
+        vbar.configure(command=self.scroll_y)  # bind scrollbars to the canvas
+        hbar.configure(command=self.scroll_x)
+        # Make the canvas expandable
+        self.master.rowconfigure(0, weight=1)
+        self.master.columnconfigure(0, weight=1)
+        # Bind events to the Canvas
+        self.frame_position="UNKNOWN"
+    
     def init(self, path, position):
         ''' Initialize the main Frame '''
         self.canvas.bind('<Configure>', self.show_image)  # canvas is resized
@@ -94,12 +128,24 @@ class Zoom_Advanced(ttk.Frame):
         else:
             self.active_pane=1
         #self.window.after(100, self.selecting_file)
-        ds = pydicom.dcmread(path)
-
-        shape = ds.pixel_array.shape
+        ds = pydicom.dcmread(path, force=True)
+        if ds.PatientAge is not None:
+            self.age=ds.PatientAge
+        else:
+            self.age='-1Y'
+        #shape = ds.pixel_array.shape
+        image_2d = ds.pixel_array.astype(float)
+        if 'WindowWidth' in ds:
+            print('Dataset has windowing')
+            windowed  = apply_voi_lut(ds.pixel_array, ds)
+            #plt.imshow(windowed, cmap="gray", vmax=windowed.max(), vmin=windowed.min)
+            #plt.show()
+            image_2d=windowed.astype(float)
+            
+        
 
         # Convert to float to avoid overflow or underflow losses.
-        image_2d = ds.pixel_array.astype(float)
+        #image_2d = ds.pixel_array.astype(float)
 
         # Rescaling grey scale between 0-255
         image_2d_scaled = (np.maximum(image_2d,0) / image_2d.max()) * 255.0
@@ -116,6 +162,7 @@ class Zoom_Advanced(ttk.Frame):
         # Plot some optional random rectangles for the test purposes
         
         self.show_image()
+    
 
     def scroll_y(self, *args, **kwargs):
         ''' Scroll canvas vertically and redraw the image '''
@@ -238,11 +285,11 @@ class Zoom_Advanced(ttk.Frame):
             #draw dot over position which is clicked
             x1, y1 = (x - 1), (y - 1)
             x2, y2 = (x + 1), (y + 1)
-            self.canvas.create_oval(x1, y1, x2, y2, fill=self.label_color, outline=self.label_color, width=5, tags=('points'))    
+            self.canvas.create_oval(x1, y1, x2, y2, fill=self.label_color, outline=self.label_color, width=0, tags=('points'))    
         numberofPoint=len(list_of_points2)
         # Draw polygon
         if numberofPoint>2:
-            self.current_polygon=self.poly=self.canvas.create_polygon(list_of_points2, fill='', outline=self.label_color, width=2,tags=('polygon'))
+            self.current_polygon=self.poly=self.canvas.create_polygon(list_of_points2, fill='', outline=self.label_color, width=2,tags=('polygon'),dash=self.dash_type)
             self.canvas.coords(self.poly,)
         elif numberofPoint==2 :
             print('line')
