@@ -15,7 +15,12 @@ import skimage.io as io
 import matplotlib.pyplot as plt
 import numpy as np
 import Zoom_Advanced
+import pandas as pd
 import cv2
+import os
+import pydicom
+import sys
+import fnmatch
 def key_func(current_frame, key_pressed,params):
     scale, x_shift, y_shift=params
     if(key_pressed=="BackSpace"):
@@ -173,18 +178,12 @@ def popup_message(msg):
     b = ttk.Button(win, text="Okay", command=win.destroy)
     b.grid(row=1, column=0)
 def savejson():
-    #print(filename_l)
-    #print(filename_r)
-    
-    #annotation=np.zeros(annotations[0].height, annotations[0].width)
-    #print(app.annotations[0])
-    #print(app.annotations[0]['height'])
     if(len(app.annotations)>0):
         mask=np.array(np.zeros((app.annotations[0]['height'], app.annotations[0]['width'],3)),np.uint8)
         for i in range(len(app.annotations)):
             #print(list(app.annotations[i]['poly']))
-            print(app.annotations[i])
-            print(label_colors2[app.annotations[i]['label']])
+            #print(app.annotations[i])
+            #print(label_colors2[app.annotations[i]['label']])
             poly=np.array(app.annotations[i]['poly'], np.int32)
             cv2.fillPoly(mask, [poly], tuple(label_colors2[app.annotations[i]['label']]))
         #print(str(app.path+"GT.png"))
@@ -195,8 +194,8 @@ def savejson():
         #ori_im=np.array(app2.image)
         for i in range(len(app2.annotations)):
             #print(list(app.annotations[i]['poly']))
-            print(app2.annotations[i])
-            print(label_colors2[app2.annotations[i]['label']])
+            #print(app2.annotations[i])
+            #print(label_colors2[app2.annotations[i]['label']])
             poly=np.array(app2.annotations[i]['poly'], np.int32)
             cv2.fillPoly(mask, [poly], tuple(label_colors2[app2.annotations[i]['label']]))
             #cv2.fillPoly(ori_im, [poly], tuple(label_colors2[app2.annotations[i]['label']]))
@@ -211,6 +210,136 @@ def savejson():
         json.dump(app2.annotations, f,indent=4)
     popup_message("successfully saved")
     reset(app,app2)
+def loadjson():
+    if(app.path!=None):
+        print('annotation path:',app.path+'.json')
+        f = open(app.path+'.json')
+        
+        annotations=json.load(f)
+        print(annotations)
+        app.annotations=annotations
+        count=0;
+        for annotation in annotations:
+            #app.canvas.delete('points')
+            #print(annotation["age"])
+            #current_frame.annotations.append(({'age':current_frame.age,'width':current_frame.width,'height': current_frame.height,'label_name':current_frame.current_label_name,'label':current_frame.current_label,labeltype+'_level':current_frame.birads_level,labeltype+'_level_name':current_frame.birads_level_name,'poly':current_frame.list_of_points}))
+            #break
+            count+=1
+            list_of_points=annotation["poly"]
+            bbox = app.canvas.bbox(app.container)  # get image area
+            bbox1 = (bbox[0] + 1, bbox[1] + 1, bbox[2] - 1, bbox[3] - 1)
+            bbox2 = (app.canvas.canvasx(0),  # get visible area of the canvas
+                    app.canvas.canvasy(0),
+                    app.canvas.canvasx(app.canvas.winfo_width()),
+                    app.canvas.canvasy(app.canvas.winfo_height()))
+            x_shift=bbox1[0]
+            y_shift=bbox1[1]
+            list_of_points2=[]
+            for pt in list_of_points:
+                x, y =  pt
+                x=x*app.imscale+x_shift
+                y=y*app.imscale+y_shift
+                list_of_points2.append((x,y))
+            
+            print(annotation,dash_types)
+            if(annotation["label"]==8):
+                print(annotation["label"], label_colors)
+                app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[0], width=2,tags=('final_polygon'),dash=dash_types[0])
+            else:
+                #print(annotation["BIRADS_level"])
+                try:
+                    app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[annotation["label"]], width=2,tags=('final_polygon'),dash=dash_types[annotation["BIRADS_level"]])
+                except:
+                    app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[annotation["label"]], width=2,tags=('final_polygon'),dash=dash_types[annotation["birads_level"]])
+  
+            app.list_of_points=[]
+        print(count, "annotations were loaded")
+    # returns JSON object as 
+    # a dictionary
+    #data = json.load(f)
+def exportcsv():
+    data_directory = filedialog.askdirectory(title="Select Dataset Directory")
+    destination_directory = filedialog.askdirectory(title="Select Destination Directory")
+    print(destination_directory,data_directory)
+    ann_counter=0
+    im_counter=0
+    total_anns= len(fnmatch.filter(os.listdir(data_directory), '*.json'))
+    df=pd.DataFrame(columns=['patient_id','Filename','ViewPosition','Laterality','size','label','label_name','BIRADS_level', 'BIRADS_level_name', 'poly', 'Density_level', 'Density_level_name'])
+    df2=pd.DataFrame(columns=['patient_id','Filename','ViewPosition','Laterality','size',"Mass","Calcification", "ArchitecturalDistortion", "Asymmetry", "DuctalDialtion", "SkinTichening", "NippleRetraction", "Lymphnode","Density"])
+   
+    for root, dirs, files in os.walk(data_directory):
+        path = root.split(os.sep)
+        #print(path)
+        
+        for filename in files:
+            #print(filename,filename.endswith(".json"),path[-1])
+            #continue
+            
+            if filename.endswith(".json"):
+                im_counter+=1
+                print("processing file", im_counter, "of ", total_anns)
+            
+                f = open(os.path.join(root, filename)) 
+                impath= os.path.join(root, filename[:-5])
+                ds = pydicom.dcmread(impath, force=True)
+                viewP="UN";
+                imL="UN"
+                try:
+                    if ds.ViewPosition is not None:
+                        viewP=ds.ViewPosition
+                    if ds.ImageLaterality is not None:
+                        imL=ds.ImageLaterality
+                except:
+                    print("Unexpected error:", sys.exc_info()[0])
+
+            
+                annotations=json.load(f)
+                df2_loc=pd.DataFrame({'patient_id':path[-1],'Filename':filename,'ViewPosition':viewP,'Laterality':imL,'size':[''],"Mass":0,"Calcification":0, "ArchitecturalDistortion":0, "Asymmetry":0, "DuctalDialtion":0, "SkinTichening":0, "NippleRetraction":0, "Lymphnode":0,"Density":0})       
+                #annotations=pd.read_json(os.path.join(root, filename))
+                for annotation in annotations:
+                    #print(annotation)
+                    #print(np.array2string(np.array(annotation['poly']), precision=2, separator=',',suppress_small=True))
+                    ann_counter+=1
+                    if(annotation["label"]==8):
+                        df_loc=pd.DataFrame({'Laterality':[imL],"ViewPosition":[viewP],'size':[str(annotation['width'])+'X'+str(annotation['height'])],'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'Density_level':annotation['Density_level'], 'Density_level_name':annotation['Density_level_name'],'poly':[np.array2string(np.asarray(annotation['poly']), precision=2, separator=',',suppress_small=True)]})
+                        df2_loc["Density"]=annotation['Density_level']
+                    else:
+                        try:
+                            df_loc=pd.DataFrame({'Laterality':[imL],"ViewPosition":[viewP],'size':[str(annotation['width'])+'X'+str(annotation['height'])],'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'BIRADS_level':annotation['BIRADS_level'], 'BIRADS_level_name':annotation['BIRADS_level_name'],'poly':[np.array2string(np.asarray(annotation['poly']), precision=2, separator=',',suppress_small=True)]})
+                        except:
+                            try:
+                                #print({'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'BIRADS_level':annotation['birads_level'], 'BIRADS_level_name':annotation['birads_level_name'],'poly':[np.array2string(np.asarray(annotation['poly'],), precision=2, separator=',',suppress_small=True)]})
+                                df_loc=pd.DataFrame({'Laterality':[imL],"ViewPosition":[viewP],'size':[str(annotation['width'])+'X'+str(annotation['height'])],'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'BIRADS_level':annotation['birads_level'], 'BIRADS_level_name':annotation['birads_level_name'],'poly':[np.array2string(np.asarray(annotation['poly']), precision=2, separator=',',suppress_small=True)]})
+                            except Exception as e:
+                                print("error occured processing", path[-1], filename, "error",e)
+                        #print(df_loc["label"][0])
+                        if(df_loc["label"][0]==0):
+                            df2_loc["Mass"]=df_loc["BIRADS_level"][0]
+                        elif(df_loc["label"][0]==1):
+                            df2_loc["Calcification"]=df_loc["BIRADS_level"][0]
+                        elif(df_loc["label"][0]==2):
+                            df2_loc["ArchitecturalDistortion"]=df_loc["BIRADS_level"][0]
+                        elif(df_loc["label"][0]==3):
+                            df2_loc["Asymmetry"]=df_loc["BIRADS_level"][0]
+                        elif(df_loc["label"][0]==4):
+                            df2_loc["DuctalDialtion"]=df_loc["BIRADS_level"][0]
+                        elif(df_loc["label"][0]==5):
+                            df2_loc["SkinTichening"]=df_loc["BIRADS_level"][0]
+                        elif(df_loc["label"][0]==6):
+                            df2_loc["NippleRetraction"]=df_loc["BIRADS_level"][0]
+                        elif(df_loc["label"][0]==7):
+                            df2_loc["Lymphnode"]=df_loc["BIRADS_level"][0]
+                        
+                    df2["size"]= df_loc["size"][0]    
+                    df=df.append(df_loc)
+                df2=df2.append(df2_loc)
+    print(df.head())
+    df.to_csv(os.path.join(destination_directory, 'extracted_data.csv'))
+    df2.to_csv(os.path.join(destination_directory, 'extracted_summary_data.csv'))
+    popup_message("Extracted "+ str(ann_counter) + " annotations from "+ str(im_counter)+" images and successfully saved to "+os.path.join(destination_directory, 'extrated_data.csv'))
+    #resetFrame(app2)
+
+
 def reset(appL,appR):
         appL.annotations=[]
         appR.annotations=[]
@@ -279,7 +408,7 @@ density_levels=[1,2,3,4]
 birads_levels=[2,3,4,5]
 label_names=["Mass","Calcification", "Architectureal Distortion", "Asymmetry", "Ductal Dialtion", "Skin Tichening", "Nipple Retraction", "Lymphnode"]
 birads_level_names=["BI-RADS 2", "BI-RADS 3","BI-RADS 4", "BI-RADS 5"]
-dash_types=[(5,20),(20,20),(30,10,30),()]
+dash_types=[(5,20),(20,20),(30,10,30),(30,5,15,10)]
 label_colors=["Red","green","blue", "yellow","light blue","purple","brown","magenta"]
 label_colors2=[(255,0,0),(0,255,0),(0,0,255),(0,255,255),(255,255,0),(204,204,255),(128,0,128),(165,42,42),(255,0,255)]
 
@@ -306,11 +435,17 @@ filemenu.add_command(label="Open for Left", command=selecting_left)
 filemenu.add_command(label="Open for Right", command=selecting_right)
 filemenu.add_command(label="Open for Both", command=selecting_files)
 #filemenu.add_command(label="Open Right", command=lambda: selecting_file2(app2))
-filemenu.add_command(label="Save Annotations", command=savejson)
+
 filemenu.add_command(label="Reset", command=resetAll)
 filemenu.add_separator()
 filemenu.add_command(label="Exit", command=root.quit)
+annotationmenu=tk.Menu(menubar, tearoff=0)
+annotationmenu.add_command(label="Save Annotations", command=savejson)
+annotationmenu.add_command(label="Load Annotations", command=loadjson)
+annotationmenu.add_command(label="Export Annotations to CSV", command=exportcsv)
+
 menubar.add_cascade(label="File", menu=filemenu)
+menubar.add_cascade(label="Annotation", menu=annotationmenu)
 labelmenu = tk.Menu(menubar, tearoff=0)
 label_color="green"
 active_pane=0

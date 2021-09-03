@@ -129,9 +129,10 @@ class Zoom_Advanced(ttk.Frame):
             self.active_pane=1
         #self.window.after(100, self.selecting_file)
         ds = pydicom.dcmread(path, force=True)
-        if ds.PatientAge is not None:
+
+        try:
             self.age=ds.PatientAge
-        else:
+        except:
             self.age='-1Y'
         #shape = ds.pixel_array.shape
         image_2d = ds.pixel_array.astype(float)
