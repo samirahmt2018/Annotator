@@ -2,7 +2,7 @@
 # Advanced zoom example. Like in Google Maps.
 # It zooms only a tile, but not the whole image. So the zoomed tile occupies
 # constant memory and not crams it with a huge resized image for the large zooms.
-from __future__ import annotations
+#from __future__ import annotations
 import random
 import tkinter as tk
 from tkinter import Event, Label, PhotoImage, ttk
@@ -282,7 +282,7 @@ def exportcsv():
                 f = open(os.path.join(root, filename)) 
                 impath= os.path.join(root, filename[:-5])
                 ds = pydicom.dcmread(impath, force=True)
-                viewP="UN";
+                viewP="UN"
                 imL="UN"
                 try:
                     if ds.ViewPosition is not None:
@@ -292,9 +292,13 @@ def exportcsv():
                 except:
                     print("Unexpected error:", sys.exc_info()[0])
 
-            
+                age=0
+                try:
+                    age=ds.PatientAge
+                except:
+                    age='-1Y'
                 annotations=json.load(f)
-                df2_loc=pd.DataFrame({'patient_id':path[-1],'Filename':filename,'ViewPosition':viewP,'Laterality':imL,'size':[''],"Mass":0,"Calcification":0, "ArchitecturalDistortion":0, "Asymmetry":0, "DuctalDialtion":0, "SkinTichening":0, "NippleRetraction":0, "Lymphnode":0,"Density":0})       
+                df2_loc=pd.DataFrame({'patient_id':path[-1],'age':age,'Filename':filename,'ViewPosition':viewP,'Laterality':imL,'size':[''],"Mass":0,"Calcification":0, "ArchitecturalDistortion":0, "Asymmetry":0, "DuctalDialtion":0, "SkinTichening":0, "NippleRetraction":0, "Lymphnode":0,"Density":0})       
                 #annotations=pd.read_json(os.path.join(root, filename))
                 for annotation in annotations:
                     #print(annotation)
