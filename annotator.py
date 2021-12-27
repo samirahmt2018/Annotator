@@ -278,65 +278,68 @@ def exportcsv():
             if filename.endswith(".json"):
                 im_counter+=1
                 print("processing file", im_counter, "of ", total_anns)
-            
-                f = open(os.path.join(root, filename)) 
-                impath= os.path.join(root, filename[:-5])
-                ds = pydicom.dcmread(impath, force=True)
-                viewP="UN"
-                imL="UN"
                 try:
-                    if ds.ViewPosition is not None:
-                        viewP=ds.ViewPosition
-                    if ds.ImageLaterality is not None:
-                        imL=ds.ImageLaterality
-                except:
-                    print("Unexpected error:", sys.exc_info()[0])
+                    f = open(os.path.join(root, filename)) 
+                    impath= os.path.join(root, filename[:-5])
+                    ds = pydicom.dcmread(impath, force=True)
+                    viewP="UN"
+                    imL="UN"
+                    try:
+                        if ds.ViewPosition is not None:
+                            viewP=ds.ViewPosition
+                        if ds.ImageLaterality is not None:
+                            imL=ds.ImageLaterality
+                    except:
+                        print("Unexpected error:", sys.exc_info()[0])
 
-                age=0
-                try:
-                    age=ds.PatientAge
-                except:
-                    age='-1Y'
-                annotations=json.load(f)
-                df2_loc=pd.DataFrame({'patient_id':path[-1],'age':age,'Filename':filename,'ViewPosition':viewP,'Laterality':imL,'size':[''],"Mass":0,"Calcification":0, "ArchitecturalDistortion":0, "Asymmetry":0, "DuctalDialtion":0, "SkinTichening":0, "NippleRetraction":0, "Lymphnode":0,"Density":0})       
-                #annotations=pd.read_json(os.path.join(root, filename))
-                for annotation in annotations:
-                    #print(annotation)
-                    #print(np.array2string(np.array(annotation['poly']), precision=2, separator=',',suppress_small=True))
-                    ann_counter+=1
-                    if(annotation["label"]==8):
-                        df_loc=pd.DataFrame({'Laterality':[imL],"ViewPosition":[viewP],'size':[str(annotation['width'])+'X'+str(annotation['height'])],'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'Density_level':annotation['Density_level'], 'Density_level_name':annotation['Density_level_name'],'poly':[np.array2string(np.asarray(annotation['poly']), precision=2, separator=',',suppress_small=True)]})
-                        df2_loc["Density"]=annotation['Density_level']
-                    else:
-                        try:
-                            df_loc=pd.DataFrame({'Laterality':[imL],"ViewPosition":[viewP],'size':[str(annotation['width'])+'X'+str(annotation['height'])],'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'BIRADS_level':annotation['BIRADS_level'], 'BIRADS_level_name':annotation['BIRADS_level_name'],'poly':[np.array2string(np.asarray(annotation['poly']), precision=2, separator=',',suppress_small=True)]})
-                        except:
+                    age=0
+                    try:
+                        age=ds.PatientAge
+                    except:
+                        age='-1Y'
+                    annotations=json.load(f)
+                    df2_loc=pd.DataFrame({'patient_id':path[-1],'age':age,'Filename':filename,'ViewPosition':viewP,'Laterality':imL,'size':[''],"Mass":0,"Calcification":0, "ArchitecturalDistortion":0, "Asymmetry":0, "DuctalDialtion":0, "SkinTichening":0, "NippleRetraction":0, "Lymphnode":0,"Density":0})       
+                    #annotations=pd.read_json(os.path.join(root, filename))
+                    for annotation in annotations:
+                        #print(annotation)
+                        #print(np.array2string(np.array(annotation['poly']), precision=2, separator=',',suppress_small=True))
+                        ann_counter+=1
+                        if(annotation["label"]==8):
+                            df_loc=pd.DataFrame({'Laterality':[imL],"ViewPosition":[viewP],'size':[str(annotation['width'])+'X'+str(annotation['height'])],'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'Density_level':annotation['Density_level'], 'Density_level_name':annotation['Density_level_name'],'poly':[np.array2string(np.asarray(annotation['poly']), precision=2, separator=',',suppress_small=True)]})
+                            df2_loc["Density"]=annotation['Density_level']
+                        else:
                             try:
-                                #print({'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'BIRADS_level':annotation['birads_level'], 'BIRADS_level_name':annotation['birads_level_name'],'poly':[np.array2string(np.asarray(annotation['poly'],), precision=2, separator=',',suppress_small=True)]})
-                                df_loc=pd.DataFrame({'Laterality':[imL],"ViewPosition":[viewP],'size':[str(annotation['width'])+'X'+str(annotation['height'])],'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'BIRADS_level':annotation['birads_level'], 'BIRADS_level_name':annotation['birads_level_name'],'poly':[np.array2string(np.asarray(annotation['poly']), precision=2, separator=',',suppress_small=True)]})
-                            except Exception as e:
-                                print("error occured processing", path[-1], filename, "error",e)
-                        #print(df_loc["label"][0])
-                        if(df_loc["label"][0]==0):
-                            df2_loc["Mass"]=df_loc["BIRADS_level"][0]
-                        elif(df_loc["label"][0]==1):
-                            df2_loc["Calcification"]=df_loc["BIRADS_level"][0]
-                        elif(df_loc["label"][0]==2):
-                            df2_loc["ArchitecturalDistortion"]=df_loc["BIRADS_level"][0]
-                        elif(df_loc["label"][0]==3):
-                            df2_loc["Asymmetry"]=df_loc["BIRADS_level"][0]
-                        elif(df_loc["label"][0]==4):
-                            df2_loc["DuctalDialtion"]=df_loc["BIRADS_level"][0]
-                        elif(df_loc["label"][0]==5):
-                            df2_loc["SkinTichening"]=df_loc["BIRADS_level"][0]
-                        elif(df_loc["label"][0]==6):
-                            df2_loc["NippleRetraction"]=df_loc["BIRADS_level"][0]
-                        elif(df_loc["label"][0]==7):
-                            df2_loc["Lymphnode"]=df_loc["BIRADS_level"][0]
-                        
-                    df2["size"]= df_loc["size"][0]    
-                    df=df.append(df_loc)
-                df2=df2.append(df2_loc)
+                                df_loc=pd.DataFrame({'Laterality':[imL],"ViewPosition":[viewP],'size':[str(annotation['width'])+'X'+str(annotation['height'])],'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'BIRADS_level':annotation['BIRADS_level'], 'BIRADS_level_name':annotation['BIRADS_level_name'],'poly':[np.array2string(np.asarray(annotation['poly']), precision=2, separator=',',suppress_small=True)]})
+                            except:
+                                try:
+                                    #print({'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'BIRADS_level':annotation['birads_level'], 'BIRADS_level_name':annotation['birads_level_name'],'poly':[np.array2string(np.asarray(annotation['poly'],), precision=2, separator=',',suppress_small=True)]})
+                                    df_loc=pd.DataFrame({'Laterality':[imL],"ViewPosition":[viewP],'size':[str(annotation['width'])+'X'+str(annotation['height'])],'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'BIRADS_level':annotation['birads_level'], 'BIRADS_level_name':annotation['birads_level_name'],'poly':[np.array2string(np.asarray(annotation['poly']), precision=2, separator=',',suppress_small=True)]})
+                                except Exception as e:
+                                    print("error occured processing", path[-1], filename, "error",e)
+                            #print(df_loc["label"][0])
+                            if(df_loc["label"][0]==0):
+                                df2_loc["Mass"]=df_loc["BIRADS_level"][0]
+                            elif(df_loc["label"][0]==1):
+                                df2_loc["Calcification"]=df_loc["BIRADS_level"][0]
+                            elif(df_loc["label"][0]==2):
+                                df2_loc["ArchitecturalDistortion"]=df_loc["BIRADS_level"][0]
+                            elif(df_loc["label"][0]==3):
+                                df2_loc["Asymmetry"]=df_loc["BIRADS_level"][0]
+                            elif(df_loc["label"][0]==4):
+                                df2_loc["DuctalDialtion"]=df_loc["BIRADS_level"][0]
+                            elif(df_loc["label"][0]==5):
+                                df2_loc["SkinTichening"]=df_loc["BIRADS_level"][0]
+                            elif(df_loc["label"][0]==6):
+                                df2_loc["NippleRetraction"]=df_loc["BIRADS_level"][0]
+                            elif(df_loc["label"][0]==7):
+                                df2_loc["Lymphnode"]=df_loc["BIRADS_level"][0]
+                            
+                        df2["size"]= df_loc["size"][0]    
+                        df=df.append(df_loc)
+                    df2=df2.append(df2_loc)
+                except:
+                    print("error accessing file",filename)
+                
     print(df.head())
     df.to_csv(os.path.join(destination_directory, 'extracted_data.csv'))
     df2.to_csv(os.path.join(destination_directory, 'extracted_summary_data.csv'))
