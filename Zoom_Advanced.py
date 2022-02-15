@@ -292,6 +292,8 @@ class Zoom_Advanced(ttk.Frame):
         if numberofPoint>2:
             self.current_polygon=self.poly=self.canvas.create_polygon(list_of_points2, fill='', outline=self.label_color, width=2,tags=('polygon'),dash=self.dash_type)
             self.canvas.coords(self.poly,)
+
+            
         elif numberofPoint==2 :
             print('line')
             self.current_polygon=self.canvas.create_line(list_of_points2, tags=('polygon'))

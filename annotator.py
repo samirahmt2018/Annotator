@@ -249,8 +249,10 @@ def loadjson():
                 #print(annotation["BIRADS_level"])
                 try:
                     app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[annotation["label"]], width=2,tags=('final_polygon'),dash=dash_types[annotation["BIRADS_level"]])
+                    app.canvas.create_text(x, y, text=annotation["label_name"]+": BIRADS "+str(annotation["BIRADS_level"]), fill=label_colors[annotation["label"]], font=('Helvetica 15 bold'))
                 except:
                     app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[annotation["label"]], width=2,tags=('final_polygon'),dash=dash_types[annotation["birads_level"]])
+                    app.canvas.create_text(x, y, text=annotation["label_name"]+" "+str(annotation["birads_level"]), fill=label_colors[annotation["label"]], font=('Helvetica 15 bold'))
   
             app.list_of_points=[]
         print(count, "annotations were loaded")
@@ -266,7 +268,7 @@ def exportcsv():
     total_anns= len(fnmatch.filter(os.listdir(data_directory), '*.json'))
     df=pd.DataFrame(columns=['patient_id','Filename','ViewPosition','Laterality','size','label','label_name','BIRADS_level', 'BIRADS_level_name', 'poly', 'Density_level', 'Density_level_name'])
     df2=pd.DataFrame(columns=['patient_id','Filename','ViewPosition','Laterality','size',"Mass","Calcification", "ArchitecturalDistortion", "Asymmetry", "DuctalDialtion", "SkinTichening", "NippleRetraction", "Lymphnode","Density"])
-   
+    root_path=data_directory.split(os.sep)
     for root, dirs, files in os.walk(data_directory):
         path = root.split(os.sep)
         #print(path)
@@ -317,7 +319,9 @@ def exportcsv():
                                 except Exception as e:
                                     print("error occured processing", path[-1], filename, "error",e)
                             #print(df_loc["label"][0])
-                            if(df_loc["label"][0]==0):
+                            if(df_loc["label_name"][0]=="Normal"):
+                                print("Normal detected at", path[-1], "and skipped")
+                            elif(df_loc["label"][0]==0):
                                 df2_loc["Mass"]=df_loc["BIRADS_level"][0]
                             elif(df_loc["label"][0]==1):
                                 df2_loc["Calcification"]=df_loc["BIRADS_level"][0]
@@ -341,8 +345,8 @@ def exportcsv():
                     print("error accessing file",filename)
                 
     print(df.head())
-    df.to_csv(os.path.join(destination_directory, 'extracted_data.csv'))
-    df2.to_csv(os.path.join(destination_directory, 'extracted_summary_data.csv'))
+    df.to_csv(os.path.join(destination_directory, root_path[-1]+'_extracted_data.csv'))
+    df2.to_csv(os.path.join(destination_directory, root_path[-1]+'_extracted_summary_data.csv'))
     popup_message("Extracted "+ str(ann_counter) + " annotations from "+ str(im_counter)+" images and successfully saved to "+os.path.join(destination_directory, 'extrated_data.csv'))
     #resetFrame(app2)
 
