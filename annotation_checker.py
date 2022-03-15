@@ -128,10 +128,11 @@ def plot_image(image, boxes_1,boxes_2,class_labels,name_1,name_2,is_normal_1,is_
     plt.savefig('pltsave.png')
 
 ##declare annotation files
+
 class_names=["Mass","Calcification", "Architectureal Distortion", "Asymmetry", "Ductal Dialtion", "Skin Tichening", "Nipple Retraction", "Lymphnode"]
 birads_level_names=["BI-RADS 2", "BI-RADS 3","BI-RADS 4", "BI-RADS 5"]
 data_directory_1 = "/Volumes/MLData/Paulis_Annotation/mammo__2Mulu"
-data_directory_2 = "/Volumes/MyData/Paulis_annotation2/mammo__2"
+data_directory_2 = "/Volumes/0973111473/Paulis_annotation2/2_mammo__2"
 no_files_1=len(glob.glob1(data_directory_1,"*.dcm"))
 no_files_2= len(glob.glob1(data_directory_2,"*.dcm"))
 if no_files_1 != no_files_2:

@@ -21,6 +21,7 @@ import os
 import pydicom
 import sys
 import fnmatch
+import glob
 def key_func(current_frame, key_pressed,params):
     scale, x_shift, y_shift=params
     if(key_pressed=="BackSpace"):
@@ -62,6 +63,8 @@ def key_func(current_frame, key_pressed,params):
         labeltype="BIRADS"
         if(current_frame.current_label==8):
             labeltype="Density"
+        if(current_frame.current_label==9):
+            labeltype="Anatomy"
         current_frame.annotations.append(({'age':current_frame.age,'width':current_frame.width,'height': current_frame.height,'label_name':current_frame.current_label_name,'label':current_frame.current_label,labeltype+'_level':current_frame.birads_level,labeltype+'_level_name':current_frame.birads_level_name,'poly':current_frame.list_of_points}))
         list_of_points2=[]
         for pt in current_frame.list_of_points:
@@ -184,8 +187,9 @@ def savejson():
             #print(list(app.annotations[i]['poly']))
             #print(app.annotations[i])
             #print(label_colors2[app.annotations[i]['label']])
-            poly=np.array(app.annotations[i]['poly'], np.int32)
-            cv2.fillPoly(mask, [poly], tuple(label_colors2[app.annotations[i]['label']]))
+            if(app.annotations[i]['label']<8):
+                poly=np.array(app.annotations[i]['poly'], np.int32)
+                cv2.fillPoly(mask, [poly], tuple(label_colors2[app.annotations[i]['label']]))
         #print(str(app.path+"GT.png"))
         im2write=cv2.cvtColor(mask, cv2.COLOR_RGB2BGR)
         cv2.imwrite(str(app.path+"GT.png"),im2write)
@@ -196,8 +200,9 @@ def savejson():
             #print(list(app.annotations[i]['poly']))
             #print(app2.annotations[i])
             #print(label_colors2[app2.annotations[i]['label']])
-            poly=np.array(app2.annotations[i]['poly'], np.int32)
-            cv2.fillPoly(mask, [poly], tuple(label_colors2[app2.annotations[i]['label']]))
+            if(app2.annotations[i]['label']<8):
+                poly=np.array(app2.annotations[i]['poly'], np.int32)
+                cv2.fillPoly(mask, [poly], tuple(label_colors2[app2.annotations[i]['label']]))
             #cv2.fillPoly(ori_im, [poly], tuple(label_colors2[app2.annotations[i]['label']]))
         #print(str(app.path+"GT.png"))
         im2write=cv2.cvtColor(mask, cv2.COLOR_RGB2BGR)
@@ -309,6 +314,7 @@ def exportcsv():
                         if(annotation["label"]==8):
                             df_loc=pd.DataFrame({'Laterality':[imL],"ViewPosition":[viewP],'size':[str(annotation['width'])+'X'+str(annotation['height'])],'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'Density_level':annotation['Density_level'], 'Density_level_name':annotation['Density_level_name'],'poly':[np.array2string(np.asarray(annotation['poly']), precision=2, separator=',',suppress_small=True)]})
                             df2_loc["Density"]=annotation['Density_level']
+                        
                         else:
                             try:
                                 df_loc=pd.DataFrame({'Laterality':[imL],"ViewPosition":[viewP],'size':[str(annotation['width'])+'X'+str(annotation['height'])],'Filename':filename,'patient_id': path[-1],'view':'UN', 'label':annotation['label'], 'label_name':annotation['label_name'], 'BIRADS_level':annotation['BIRADS_level'], 'BIRADS_level_name':annotation['BIRADS_level_name'],'poly':[np.array2string(np.asarray(annotation['poly']), precision=2, separator=',',suppress_small=True)]})
@@ -416,10 +422,13 @@ filename_r=None
 labels=[0,1,2,3,4,5,6,7,8]
 density_levels_names=["pre-dominantly fatty","Scattered", "Hetrogenously Dense", "Extremely Dense"]
 density_levels=[1,2,3,4]
+anatomy_type_names=["Pectoral Muscle","Breast Region", "Foreign Object", "Text","Other Body Parts"]
+anatomy_types=[1,2,3,4,5]
+
 birads_levels=[2,3,4,5]
 label_names=["Mass","Calcification", "Architectureal Distortion", "Asymmetry", "Ductal Dialtion", "Skin Tichening", "Nipple Retraction", "Lymphnode"]
 birads_level_names=["BI-RADS 2", "BI-RADS 3","BI-RADS 4", "BI-RADS 5"]
-dash_types=[(5,20),(20,20),(30,10,30),(30,5,15,10)]
+dash_types=[(5,20),(20,20),(30,10,30),(30,5,15,10),(10,5,110,10),(10,10,10,10)]
 label_colors=["Red","green","blue", "yellow","light blue","purple","brown","magenta"]
 label_colors2=[(255,0,0),(0,255,0),(0,0,255),(0,255,255),(255,255,0),(204,204,255),(128,0,128),(165,42,42),(255,0,255)]
 
@@ -450,13 +459,8 @@ filemenu.add_command(label="Open for Both", command=selecting_files)
 filemenu.add_command(label="Reset", command=resetAll)
 filemenu.add_separator()
 filemenu.add_command(label="Exit", command=root.quit)
-annotationmenu=tk.Menu(menubar, tearoff=0)
-annotationmenu.add_command(label="Save Annotations", command=savejson)
-annotationmenu.add_command(label="Load Annotations", command=loadjson)
-annotationmenu.add_command(label="Export Annotations to CSV", command=exportcsv)
 
 menubar.add_cascade(label="File", menu=filemenu)
-menubar.add_cascade(label="Annotation", menu=annotationmenu)
 labelmenu = tk.Menu(menubar, tearoff=0)
 label_color="green"
 active_pane=0
@@ -476,6 +480,22 @@ for i in range(len(density_levels)):
 labelmenu.add_cascade(label="Density", underline=0, menu=submenu) 
 
 menubar.add_cascade(label="Change Label", menu=labelmenu)
+
+
+
+anatomical_annotation=tk.Menu(menubar, tearoff=0)
+for i in range(len(anatomy_types)):
+    anatomical_annotation.add_command(label=anatomy_type_names[i], background=label_colors[i], command=partial(change_label,label_colors[i],9,"anatomy",dash_types[i],anatomy_types[i],anatomy_type_names[i]))
+
+
+menubar.add_cascade(label="Breast Anatomy", menu=anatomical_annotation)
+annotationmenu=tk.Menu(menubar, tearoff=0)
+annotationmenu.add_command(label="Save Annotations", command=savejson)
+annotationmenu.add_command(label="Load Annotations", command=loadjson)
+annotationmenu.add_command(label="Compare Annotations", command=loadjson)
+annotationmenu.add_command(label="Export Annotations to CSV", command=exportcsv)
+menubar.add_cascade(label="Annotation", menu=annotationmenu)
+
 helpmenu = tk.Menu(menubar, tearoff=0)
 helpmenu.add_command(label="About...", command=about)
 menubar.add_cascade(label="Help", menu=helpmenu)
@@ -483,4 +503,5 @@ menubar.add_cascade(label="Help", menu=helpmenu)
 root.config(menu=menubar)
 #menubar.pack()
 #print(app2.list_of_points)
+
 root.mainloop()
