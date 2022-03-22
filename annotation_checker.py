@@ -61,7 +61,7 @@ def extract_annotation(json_path):
                 try:
                     polys = np.asarray(annotation['poly'])
                     anns.append([int(annotation["label"]),annotation["BIRADS_level"],polys, indx_counter])
-                    #print("got here",anns)
+                    print(indx_counter,"label:",annotation["label"],"Level:",annotation["BIRADS_level"],"contour",*polys)
                 except Exception as e:
                     print("error occured processing",json_path_1)
                 #print(df_loc["label"][0])
@@ -92,81 +92,95 @@ ann2 = pd.read_csv(joined_data)
 first_doctor="Wube"
 second_doctor="Betty"
 final_annotations=[]
-for index, row in ann2.iterrows():
-    indx=row['indx']
-    folder_name=indx.split("-")[0]
-    file_name=indx.split("-")[1]+"-"+indx.split("-")[2]+"-"+indx.split("-")[3][:-5]
-    #print(folder_name,file_name)
-    is_normal_1=is_normal_2=False
-    density_level_1=density_level_2=-1
-    #print("Got Here:!")
-    try: 
-        impath= os.path.join(data_directory_1, folder_name,file_name)
-        #im_save_path=os.path.join(destination_directory,str(im_counter)+"_"+filename[:-4]+".png")
-        #print(impath)
-        
-        json_path_1=os.path.join(data_directory_1,folder_name,file_name+".json")
-        json_path_2=os.path.join(data_directory_2,folder_name,file_name+".json")
-        
-        
-       
-        ds = pydicom.dcmread(impath, force=True)
-        img= ds.pixel_array.astype(float)
-        
-        if 'WindowWidth' in ds:
-            #print('Dataset has windowing')
-            windowed  = apply_voi_lut(ds.pixel_array, ds)
-            #plt.imshow(windowed, cmap="gray", vmax=windowed.max(), vmin=windowed.min)
-            #plt.show()
-            img=windowed.astype(float)
-            #return "windowed"
-        # Convert to uint
-        img = (np.maximum(img,0) / img.max()) * 255.0
-        img= np.uint8(img)
-        img = cv2.merge([img,img,img])
-        #img = cv2.COLOR_GRAY2RGB()
-        #(ori_h,ori_w)=img.shape
-        
-        anns_1=extract_annotation(json_path_1)
-        anns_2=extract_annotation(json_path_2)
-        
-        im_1=img.copy()
-        im_2=img.copy()
-        
-        #print("processing file", index, "of ", len(ann2.index))
-        if len(anns_1)>0:          
-            im_1=plot_image(im_1, anns_1,class_names)
-        if len(anns_2)>0:
-            im_2=plot_image(im_2, anns_2,class_names)
-         # Create figure and axes
-        fig, ax = plt.subplots(1,2)
-        fig.set_size_inches(14.5, 7, forward=True)
-        
+start_index=int(input("please Enter first index"))
 
-        # Display the image
-        ax[0].imshow(im_1)
-        ax[1].imshow(im_2)
-        ax[0].set_title(first_doctor+" Annotation")
-        ax[1].set_title(second_doctor+" Annotation")
-        plt.show(block = False)
-        print(anns_1,anns_2)
-        selected_ann_from_1 = [int(item) for item in input("Anntoations to keep from "+first_doctor+": ").split(",")]
-        
-        selected_ann_from_2=[int(item) for item in input("Anntoations to keep from "+second_doctor+": ").split(",")]
-        #print(selected_ann_from_1,selected_ann_from_2)
-        
-        curr_ann=[]
-        if len(anns_1)>0:   
-            for i in selected_ann_from_1:
-                curr_ann.append({"class":anns_1[i][0],"BIRADS":anns_1[i][0], "poly":anns_1[i][2]})
-        if len(anns_2)>0:   
-            for i in selected_ann_from_2:
-                curr_ann.append({"class":anns_2[i][0],"BIRADS":anns_2[i][0], "poly":anns_2[i][2]})
+with open('extracted path'+'.json', 'a') as fjson, open('extracted path'+'.csv', 'a') as fcsv:
+    for index, row in ann2.iterrows():
+        if(index>=start_index):    
+            indx=row['indx']
+            folder_name=indx.split("-")[0]
+            file_name=indx.split("-")[1]+"-"+indx.split("-")[2]+"-"+indx.split("-")[3][:-5]
+            #print(folder_name,file_name)
+            is_normal_1=is_normal_2=False
+            density_level_1=density_level_2=-1
+            #print("Got Here:!")
+            try: 
+                impath= os.path.join(data_directory_1, folder_name,file_name)
+                #im_save_path=os.path.join(destination_directory,str(im_counter)+"_"+filename[:-4]+".png")
+                #print(impath)
+                
+                json_path_1=os.path.join(data_directory_1,folder_name,file_name+".json")
+                json_path_2=os.path.join(data_directory_2,folder_name,file_name+".json")
+                
+                
+            
+                ds = pydicom.dcmread(impath, force=True)
+                img= ds.pixel_array.astype(float)
+                
+                if 'WindowWidth' in ds:
+                    #print('Dataset has windowing')
+                    windowed  = apply_voi_lut(ds.pixel_array, ds)
+                    #plt.imshow(windowed, cmap="gray", vmax=windowed.max(), vmin=windowed.min)
+                    #plt.show()
+                    img=windowed.astype(float)
+                    #return "windowed"
+                # Convert to uint
+                img = (np.maximum(img,0) / img.max()) * 255.0
+                img= np.uint8(img)
+                img = cv2.merge([img,img,img])
+                #img = cv2.COLOR_GRAY2RGB()
+                #(ori_h,ori_w)=img.shape
+                print("annotation by ",first_doctor)
+                anns_1=extract_annotation(json_path_1)
+                print("annotation by ",second_doctor)
+                anns_2=extract_annotation(json_path_2)
+                
+                im_1=img.copy()
+                im_2=img.copy()
+                
+                #print("processing file", index, "of ", len(ann2.index))
+                if len(anns_1)>0:          
+                    im_1=plot_image(im_1, anns_1,class_names)
+                if len(anns_2)>0:
+                    im_2=plot_image(im_2, anns_2,class_names)
+                # Create figure and axes
+                fig, ax = plt.subplots(1,2)
+                fig.set_size_inches(14.5, 7, forward=True)
+                
 
-        final_annotations.append({"patien_id":folder_name,"file_name":file_name,"annotations":curr_ann})
-        print(final_annotations)
-        input("Press Enter to continue...")
-    except Exception as e:
-        print("General error Occured at the end",e)
-        break;     
+                # Display the image
+                ax[0].imshow(im_1)
+                ax[1].imshow(im_2)
+                ax[0].set_title(first_doctor+" Annotation")
+                ax[1].set_title(second_doctor+" Annotation")
+                plt.show(block = False)
+                #print(anns_1,anns_2)
+                selected_ann_from_1 = [int(item) for item in input("Anntoations to keep from "+first_doctor+": ").split(",")]
+                
+                selected_ann_from_2=[int(item) for item in input("Anntoations to keep from "+second_doctor+": ").split(",")]
+                #print(selected_ann_from_1,selected_ann_from_2)
+                needs_recheck=input("does these annotation need a checkup")
+                curr_ann=[]
+                if len(anns_1)>0:   
+                    for i in selected_ann_from_1:
+                        if(i>-1):
+                            curr_ann.append({"class":anns_1[i][0],"BIRADS":anns_1[i][1], "poly":anns_1[i][2].tolist(),"ann_by":first_doctor})
+                if len(anns_2)>0:   
+                    for i in selected_ann_from_2:
+                        if(i>-1):
+                            curr_ann.append({"class":anns_2[i][0],"BIRADS":anns_2[i][1], "poly":anns_2[i][2].tolist(), "ann_by":second_doctor})
+
+                final_annotations={"id":index,"patien_id":folder_name,"file_name":file_name,"annotations":curr_ann, "needs_recheck":needs_recheck}
+                print(final_annotations)
+                json.dump(final_annotations, fjson, indent=6)
+                fjson.write(",\n")
+                
+                fcsv.write("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n"%(str(index),folder_name,file_name,str(curr_ann),str(needs_recheck)))
+                #print(final_annotations)
+                c=input("Press Enter to continue...")
+                if c=="q":
+                    break;
+            except Exception as e:
+                print("General error Occured at the end",e)
+                break;     
     
