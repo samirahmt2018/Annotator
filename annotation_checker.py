@@ -1,5 +1,6 @@
 from __future__ import annotations
 import fnmatch
+import sys
 from cv2 import equalizeHist
 import pandas as pd
 import os
@@ -93,94 +94,129 @@ first_doctor="Wube"
 second_doctor="Betty"
 final_annotations=[]
 start_index=int(input("please Enter first index"))
+df_csv = pd.DataFrame(columns=["indx", "id", "patient_id","file_name","annotations", "needs_recheck"])
+df_csv_ann = pd.DataFrame(columns=["indx", "id", "patient_id","file_name","class","BIRADS", "poly", "ann_by"])
 
-with open('extracted path'+'.json', 'a') as fjson, open('extracted path'+'.csv', 'a') as fcsv:
-    for index, row in ann2.iterrows():
-        if(index>=start_index):    
-            indx=row['indx']
-            folder_name=indx.split("-")[0]
-            file_name=indx.split("-")[1]+"-"+indx.split("-")[2]+"-"+indx.split("-")[3][:-5]
-            #print(folder_name,file_name)
-            is_normal_1=is_normal_2=False
-            density_level_1=density_level_2=-1
-            #print("Got Here:!")
-            try: 
-                impath= os.path.join(data_directory_1, folder_name,file_name)
-                #im_save_path=os.path.join(destination_directory,str(im_counter)+"_"+filename[:-4]+".png")
-                #print(impath)
-                
-                json_path_1=os.path.join(data_directory_1,folder_name,file_name+".json")
-                json_path_2=os.path.join(data_directory_2,folder_name,file_name+".json")
-                
-                
+if(start_index==0):
+    resp=input("Are you sure to delete existing data? Y|N")
+    if resp.upper()!="Y":
+        sys.exit()
+   
+
+def write_json(new_data, filename='data.json'):
+    with open(filename,'r+') as file:
+          # First we load existing data into a dict.
+        file_data = json.load(file)
+        # Join new_data with file_data inside emp_details
+        file_data.append(new_data)
+        # Sets file's current position at offset.
+        file.seek(0)
+        # convert back to json.
+        json.dump(file_data, file, indent = 6)
+final_annotations=[]
+
+for index, row in ann2.iterrows():
+    if(index>=start_index):    
+        indx=row['indx']
+        folder_name=indx.split("-")[0]
+        file_name=indx.split("-")[1]+"-"+indx.split("-")[2]+"-"+indx.split("-")[3][:-5]
+        #print(folder_name,file_name)
+        is_normal_1=is_normal_2=False
+        density_level_1=density_level_2=-1
+        #print("Got Here:!")
+        try: 
+            impath= os.path.join(data_directory_1, folder_name,file_name)
+            #im_save_path=os.path.join(destination_directory,str(im_counter)+"_"+filename[:-4]+".png")
+            #print(impath)
             
-                ds = pydicom.dcmread(impath, force=True)
-                img= ds.pixel_array.astype(float)
-                
-                if 'WindowWidth' in ds:
-                    #print('Dataset has windowing')
-                    windowed  = apply_voi_lut(ds.pixel_array, ds)
-                    #plt.imshow(windowed, cmap="gray", vmax=windowed.max(), vmin=windowed.min)
-                    #plt.show()
-                    img=windowed.astype(float)
-                    #return "windowed"
-                # Convert to uint
-                img = (np.maximum(img,0) / img.max()) * 255.0
-                img= np.uint8(img)
-                img = cv2.merge([img,img,img])
-                #img = cv2.COLOR_GRAY2RGB()
-                #(ori_h,ori_w)=img.shape
-                print("annotation by ",first_doctor)
-                anns_1=extract_annotation(json_path_1)
-                print("annotation by ",second_doctor)
-                anns_2=extract_annotation(json_path_2)
-                
-                im_1=img.copy()
-                im_2=img.copy()
-                
-                #print("processing file", index, "of ", len(ann2.index))
-                if len(anns_1)>0:          
-                    im_1=plot_image(im_1, anns_1,class_names)
-                if len(anns_2)>0:
-                    im_2=plot_image(im_2, anns_2,class_names)
-                # Create figure and axes
-                fig, ax = plt.subplots(1,2)
-                fig.set_size_inches(14.5, 7, forward=True)
-                
+            json_path_1=os.path.join(data_directory_1,folder_name,file_name+".json")
+            json_path_2=os.path.join(data_directory_2,folder_name,file_name+".json")
+            
+            
+        
+            ds = pydicom.dcmread(impath, force=True)
+            img= ds.pixel_array.astype(float)
+            
+            if 'WindowWidth' in ds:
+                #print('Dataset has windowing')
+                windowed  = apply_voi_lut(ds.pixel_array, ds)
+                #plt.imshow(windowed, cmap="gray", vmax=windowed.max(), vmin=windowed.min)
+                #plt.show()
+                img=windowed.astype(float)
+                #return "windowed"
+            # Convert to uint
+            img = (np.maximum(img,0) / img.max()) * 255.0
+            img= np.uint8(img)
+            img = cv2.merge([img,img,img])
+            #img = cv2.COLOR_GRAY2RGB()
+            #(ori_h,ori_w)=img.shape
+            print("annotation by ",first_doctor)
+            anns_1=extract_annotation(json_path_1)
+            print("annotation by ",second_doctor)
+            anns_2=extract_annotation(json_path_2)
+            
+            im_1=img.copy()
+            im_2=img.copy()
+            
+            #print("processing file", index, "of ", len(ann2.index))
+            if len(anns_1)>0:          
+                im_1=plot_image(im_1, anns_1,class_names)
+            if len(anns_2)>0:
+                im_2=plot_image(im_2, anns_2,class_names)
+            # Create figure and axes
+            fig, ax = plt.subplots(1,2)
+            fig.set_size_inches(14.5, 7, forward=True)
+            
 
-                # Display the image
-                ax[0].imshow(im_1)
-                ax[1].imshow(im_2)
-                ax[0].set_title(first_doctor+" Annotation")
-                ax[1].set_title(second_doctor+" Annotation")
-                plt.show(block = False)
-                #print(anns_1,anns_2)
-                selected_ann_from_1 = [int(item) for item in input("Anntoations to keep from "+first_doctor+": ").split(",")]
-                
-                selected_ann_from_2=[int(item) for item in input("Anntoations to keep from "+second_doctor+": ").split(",")]
-                #print(selected_ann_from_1,selected_ann_from_2)
-                needs_recheck=input("does these annotation need a checkup")
-                curr_ann=[]
-                if len(anns_1)>0:   
-                    for i in selected_ann_from_1:
-                        if(i>-1):
-                            curr_ann.append({"class":anns_1[i][0],"BIRADS":anns_1[i][1], "poly":anns_1[i][2].tolist(),"ann_by":first_doctor})
-                if len(anns_2)>0:   
-                    for i in selected_ann_from_2:
-                        if(i>-1):
-                            curr_ann.append({"class":anns_2[i][0],"BIRADS":anns_2[i][1], "poly":anns_2[i][2].tolist(), "ann_by":second_doctor})
+            # Display the image
+            ax[0].imshow(im_1)
+            ax[1].imshow(im_2)
+            ax[0].set_title(first_doctor+" Annotation")
+            ax[1].set_title(second_doctor+" Annotation")
+            plt.show(block = False)
+            #print(anns_1,anns_2)
+            selected_ann_from_1 = [int(item) for item in input("Anntoations to keep from "+first_doctor+": ").split(",")]
+            
+            selected_ann_from_2=[int(item) for item in input("Anntoations to keep from "+second_doctor+": ").split(",")]
+            #print(selected_ann_from_1,selected_ann_from_2)
+            needs_recheck=input("does these annotation need a checkup")
+            curr_ann=[]
+            if len(anns_1)>0:   
+                for i in selected_ann_from_1:
+                    if(i>-1):
+                        curr_ann.append({"class":anns_1[i][0],"BIRADS":anns_1[i][1], "poly":anns_1[i][2].tolist(),"ann_by":first_doctor})
+                        df_csv_ann=df_csv_ann.append([{"indx":indx,"id":index,"patient_id":folder_name,"file_name":file_name,"class":anns_1[i][0],"BIRADS":anns_1[i][1], "poly":anns_1[i][2].tolist(),"ann_by":first_doctor}], ignore_index=True)
+            if len(anns_2)>0:   
+                for i in selected_ann_from_2:
+                    if(i>-1):
+                        curr_ann.append({"class":anns_2[i][0],"BIRADS":anns_2[i][1], "poly":anns_2[i][2].tolist(), "ann_by":second_doctor})
+                        df_csv_ann=df_csv_ann.append([{"indx":indx,"id":index,"patient_id":folder_name,"file_name":file_name,"class":anns_2[i][0],"BIRADS":anns_2[i][1], "poly":anns_2[i][2].tolist(), "ann_by":second_doctor}],ignore_index=True)
+            final_annotation={indx:{"id": index,"patient_id":folder_name,"file_name":file_name,"annotations":curr_ann, "needs_recheck":needs_recheck}}
+            df_csv=df_csv.append([{"indx":indx,"id":index,"patient_id":folder_name,"file_name":file_name,"annotations":curr_ann, "needs_recheck":needs_recheck}], ignore_index=True)
+            print(final_annotation)
+            final_annotations.append(final_annotation)
+            #print(final_annotations)
+            print(df_csv)
+            print(df_csv_ann)
+            c=input("Press Enter to continue...")
+            if c=="q":
+                break;
+            plt.close('all')
+        except Exception as e:
+            print("General error Occured at the end",e)
+            break;     
 
-                final_annotations={"id":index,"patien_id":folder_name,"file_name":file_name,"annotations":curr_ann, "needs_recheck":needs_recheck}
-                print(final_annotations)
-                json.dump(final_annotations, fjson, indent=6)
-                fjson.write(",\n")
-                
-                fcsv.write("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n"%(str(index),folder_name,file_name,str(curr_ann),str(needs_recheck)))
-                #print(final_annotations)
-                c=input("Press Enter to continue...")
-                if c=="q":
-                    break;
-            except Exception as e:
-                print("General error Occured at the end",e)
-                break;     
+if(start_index==0):
+    df_csv.to_csv("checked_data.csv", mode="w", index=False, header=True)
+    df_csv_ann.to_csv("checked_data_each_ann.csv", mode="w", index=False, header=True)
+    out_file = open("checked_data.json", "w")
+    json.dump(final_annotations, out_file, indent = 6)
     
+    out_file.close()
+
+else:
+    df_csv.to_csv("checked_data.csv", mode="a", index=False, header=False)
+    df_csv_ann.to_csv("checked_data_each_ann.csv", mode="a", index=False, header=False)
+    write_json(final_annotations, filename="checked_data.json")
+
+

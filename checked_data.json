@@ -1,0 +1,200 @@
+[
+      {
+            "PAT_Pl_009874-00-CC-R.dcm.json": {
+                  "id": 0,
+                  "patient_id": "PAT_Pl_009874",
+                  "file_name": "00-CC-R.dcm",
+                  "annotations": [
+                        {
+                              "class": 3,
+                              "BIRADS": 3,
+                              "poly": [
+                                    [
+                                          1071,
+                                          1935
+                                    ],
+                                    [
+                                          1597,
+                                          1370
+                                    ],
+                                    [
+                                          1544,
+                                          1298
+                                    ],
+                                    [
+                                          1032,
+                                          1274
+                                    ],
+                                    [
+                                          868,
+                                          1496
+                                    ],
+                                    [
+                                          680,
+                                          1752
+                                    ],
+                                    [
+                                          675,
+                                          1978
+                                    ]
+                              ],
+                              "ann_by": "Wube"
+                        }
+                  ],
+                  "needs_recheck": "0"
+            }
+      },
+      {
+            "PAT_Pl_009874-00-MLO-R.dcm.json": {
+                  "id": 1,
+                  "patient_id": "PAT_Pl_009874",
+                  "file_name": "00-MLO-R.dcm",
+                  "annotations": [
+                        {
+                              "class": 3,
+                              "BIRADS": 3,
+                              "poly": [
+                                    [
+                                          574,
+                                          2104
+                                    ],
+                                    [
+                                          588,
+                                          1660
+                                    ],
+                                    [
+                                          666,
+                                          1578
+                                    ],
+                                    [
+                                          859,
+                                          1549
+                                    ],
+                                    [
+                                          994,
+                                          1626
+                                    ],
+                                    [
+                                          1187,
+                                          1670
+                                    ],
+                                    [
+                                          1187,
+                                          1670
+                                    ],
+                                    [
+                                          1129,
+                                          1892
+                                    ],
+                                    [
+                                          1066,
+                                          2109
+                                    ],
+                                    [
+                                          859,
+                                          2225
+                                    ],
+                                    [
+                                          825,
+                                          2312
+                                    ]
+                              ],
+                              "ann_by": "Wube"
+                        }
+                  ],
+                  "needs_recheck": "-1"
+            }
+      },
+      [
+            {
+                  "PAT_Pl_009874-01-MLO-L.dcm.json": {
+                        "id": 2,
+                        "patient_id": "PAT_Pl_009874",
+                        "file_name": "01-MLO-L.dcm",
+                        "annotations": [],
+                        "needs_recheck": "0"
+                  }
+            },
+            {
+                  "PAT_Pl_009874-00-MLO-L.dcm.json": {
+                        "id": 3,
+                        "patient_id": "PAT_Pl_009874",
+                        "file_name": "00-MLO-L.dcm",
+                        "annotations": [
+                              {
+                                    "class": 7,
+                                    "BIRADS": 2,
+                                    "poly": [
+                                          [
+                                                74,
+                                                257
+                                          ],
+                                          [
+                                                242,
+                                                265
+                                          ],
+                                          [
+                                                214,
+                                                365
+                                          ],
+                                          [
+                                                197,
+                                                411
+                                          ],
+                                          [
+                                                68,
+                                                445
+                                          ],
+                                          [
+                                                0,
+                                                382
+                                          ],
+                                          [
+                                                17,
+                                                305
+                                          ]
+                                    ],
+                                    "ann_by": "Wube"
+                              },
+                              {
+                                    "class": 7,
+                                    "BIRADS": 2,
+                                    "poly": [
+                                          [
+                                                0,
+                                                722
+                                          ],
+                                          [
+                                                39,
+                                                762
+                                          ],
+                                          [
+                                                39,
+                                                822
+                                          ],
+                                          [
+                                                14,
+                                                819
+                                          ],
+                                          [
+                                                5,
+                                                822
+                                          ]
+                                    ],
+                                    "ann_by": "Wube"
+                              }
+                        ],
+                        "needs_recheck": "0"
+                  }
+            },
+            {
+                  "PAT_Pl_009874-00-CC-L.dcm.json": {
+                        "id": 4,
+                        "patient_id": "PAT_Pl_009874",
+                        "file_name": "00-CC-L.dcm",
+                        "annotations": [],
+                        "needs_recheck": "0"
+                  }
+            }
+      ]
+]
