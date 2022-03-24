@@ -16,6 +16,16 @@ from matplotlib import pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.patches as mpatches
 import numpy as np
+from shapely import geometry
+import tkinter as tk
+#from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import (
+    FigureCanvasTkAgg, NavigationToolbar2Tk)
+from matplotlib.backend_bases import key_press_handler
+root= tk.Tk() 
+#root.attributes("-fullscreen", True) 
+
+
 
 def plot_image(image, anns,class_labels):
     """Plots predicted bounding boxes on the image"""
@@ -28,18 +38,19 @@ def plot_image(image, anns,class_labels):
         class_pred = ann[0]
         if(class_pred<8):
         #box = box[2:]
-            poly_coords=[ann[2]]
-            cv2.drawContours(image,poly_coords, 0,colors[int(class_pred)],3)
+            poly_coords=ann[2]
+            cv2.drawContours(image,[poly_coords], 0,colors[int(class_pred)],3)
             #print(name, "anns",class_labels[int(class_pred)], poly_coords[0])
-            bbox = cv2.boundingRect(poly_coords[0])
+            #bbox = cv2.boundingRect(poly_coords)
             #print(x_c,y_c,x_min,y_min,w,h)
-        
+            poly = geometry.Polygon([[p[0], p[1]] for p in poly_coords])
+            centroid=poly.representative_point()
             # Add the patch to the Axes
             #image.add_patch(poly)
+            print(centroid.x,centroid.y)
             
             
-            
-            cv2.putText(img=image, text=class_labels[int(class_pred)]+"-BI-"+str(ann[1])+"{"+str(ann[3])+"}", org=(max(bbox[0]-5,0),max(bbox[1]-5,0)), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=2, color=colors[int(class_pred)],thickness=2)
+            cv2.putText(img=image, text=str(ann[3]), org=(int(centroid.x),int(centroid.y)), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=2, color=colors[int(class_pred)],thickness=2)
 
             
        
@@ -62,7 +73,7 @@ def extract_annotation(json_path):
                 try:
                     polys = np.asarray(annotation['poly'])
                     anns.append([int(annotation["label"]),annotation["BIRADS_level"],polys, indx_counter])
-                    print(indx_counter,"label:",annotation["label"],"Level:",annotation["BIRADS_level"],"contour",*polys)
+                    print(indx_counter,"label:",annotation["label_name"],"Level:",annotation["BIRADS_level_name"])
                 except Exception as e:
                     print("error occured processing",json_path_1)
                 #print(df_loc["label"][0])
@@ -89,6 +100,7 @@ birads_level_names=["BI-RADS 2", "BI-RADS 3","BI-RADS 4", "BI-RADS 5"]
 data_directory_1 = "/Volumes/MLData/Paulis_Annotation/mammo__1W"
 data_directory_2 = "/Volumes/0973111473/Paulis_annotation2/Mammo__1Betty"
 joined_data="/Users/sam/Desktop/new extraction/mammo1.csv"
+imsave_directory="/Users/sam/Desktop/new extraction/saved_fig"
 ann2 = pd.read_csv(joined_data)
 first_doctor="Wube"
 second_doctor="Betty"
@@ -164,17 +176,52 @@ for index, row in ann2.iterrows():
             if len(anns_2)>0:
                 im_2=plot_image(im_2, anns_2,class_names)
             # Create figure and axes
-            fig, ax = plt.subplots(1,2)
-            fig.set_size_inches(14.5, 7, forward=True)
+            figure = plt.Figure(figsize=(14.5,7), dpi=300)
+            ax1 = figure.add_subplot(121)
+            ax2=figure.add_subplot(122)
+            
             
 
             # Display the image
-            ax[0].imshow(im_1)
-            ax[1].imshow(im_2)
-            ax[0].set_title(first_doctor+" Annotation")
-            ax[1].set_title(second_doctor+" Annotation")
-            plt.show(block = False)
+            ax1.imshow(im_1)
+            ax2.imshow(im_2)
+            ax1.set_title(first_doctor+" Annotation")
+            ax2.set_title(second_doctor+" Annotation")
+            #plt.show(block = False)
+            canvas = FigureCanvasTkAgg(figure, master=root)  # A tk.DrawingArea.
+            canvas.draw()
+            canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+            toolbar = NavigationToolbar2Tk(canvas, root)
+            toolbar.update()
+            canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+
+            def on_key_press(event):
+                print("you pressed {}".format(event.key))
+                key_press_handler(event, canvas, toolbar)
+
+
+            canvas.mpl_connect("key_press_event", on_key_press)
+
+
+            def _quit():
+                root.quit()     # stops mainloop
+                root.destroy()  # this is necessary on Windows to prevent
+                                # Fatal Python Error: PyEval_RestoreThread: NULL tstate
+
+            tk.Label(root, text="First Name", )
+            tk.Label(root, text="Last Name")
+
+            e1 = tk.Entry(root)
+            e2 = tk.Entry(root)
+
+            button = tk.Button(master=root, text="Quit", command=_quit)
+            button.pack(side=tk.BOTTOM)
+            #bar1 = FigureCanvasTkAgg(figure, root)
+            #bar1.get_tk_widget().pack(side=tk.LEFT, fill=tk.BOTH)
             #print(anns_1,anns_2)
+            root.mainloop()
             selected_ann_from_1 = [int(item) for item in input("Anntoations to keep from "+first_doctor+": ").split(",")]
             
             selected_ann_from_2=[int(item) for item in input("Anntoations to keep from "+second_doctor+": ").split(",")]
@@ -201,7 +248,9 @@ for index, row in ann2.iterrows():
             c=input("Press Enter to continue...")
             if c=="q":
                 break;
+            plt.savefig(os.path.join(imsave_directory,indx[:-5]+".png"))
             plt.close('all')
+
         except Exception as e:
             print("General error Occured at the end",e)
             break;     
