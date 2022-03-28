@@ -210,7 +210,8 @@ for index, row in ann2.iterrows():
                 root.destroy()  # this is necessary on Windows to prevent
                                 # Fatal Python Error: PyEval_RestoreThread: NULL tstate
 
-            tk.Label(root, text="First Name", )
+            lb1=tk.Label(root, text="First Name")
+           
             tk.Label(root, text="Last Name")
 
             e1 = tk.Entry(root)
