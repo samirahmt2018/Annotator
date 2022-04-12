@@ -5,6 +5,7 @@ from cgitb import text
 import csv
 from distutils import command
 from email.mime import image
+from glob import glob
 from tkinter.font import NORMAL
 from turtle import bgcolor, right, width
 from typing_extensions import IntVar
@@ -52,6 +53,7 @@ annotation_objects = []
 mouse_enable = True
 egecolor = ['blue','cyan','green','purple']
 color_count = 0
+indx="0"
 filename = 'error'
 class_names=["Mass","Calcification", "Architectureal Distortion", "Asymmetry", "Ductal Dialtion", "Skin Tichening", "Nipple Retraction", "Lymphnode"]
 birads_level_names=["BI-RADS 2", "BI-RADS 3","BI-RADS 4", "BI-RADS 5"]
@@ -64,7 +66,7 @@ second_doctor="Betty"
 final_annotations=[]
 anns_1=[]
 anns_2=[]
-start_index=0
+index=0
 df_csv = pd.DataFrame(columns=["indx", "id", "patient_id","file_name","annotations", "needs_recheck"])
 df_csv_ann = pd.DataFrame(columns=["indx", "id", "patient_id","file_name","class","BIRADS", "poly", "ann_by"])
 
@@ -74,7 +76,7 @@ class AnnotationChecker(tk.Tk):
     def __init__(self, *args, **kwargs):
 
         tk.Tk.__init__(self, *args, **kwargs)
-        tk.Tk.wm_title(self,'ECG Annotation Platform')
+        tk.Tk.wm_title(self,'Annotation Checker')
 
         #change the icon
 #        photo = tk.PhotoImage(file='logo.png')
@@ -88,21 +90,33 @@ class AnnotationChecker(tk.Tk):
         tk.Tk.wm_geometry(self,"%dx%d" % (width, height))
         # print(width,height)
         
-        container = tk.Frame(self)
-        container.pack()
+        self.container = tk.Frame(self)
+        self.container.pack()
 
-        frame1 = StartPage(self,container)
-        frame1.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
+        self.frame1 = StartPage(self)
+        self.frame1.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
 
-        frame2 = TextPage(self,container)
-        frame2.pack(side=tk.RIGHT,expand=False)
+        self.frame2 = TextPage(self)
+        self.frame2.pack(side=tk.RIGHT,expand=False)
         
     def show_frame(self,cont):
         frame = self.frames[cont]
         frame.tkraise()
+    def reload_frame2(self):
+        self.frame2.destroy()
+        self.frame2 = TextPage(self)
+        self.frame2.pack(side=tk.RIGHT,expand=False)
+
+    def reload_frame1(self):
+        global index
+        print("global index",index)
+        self.frame1.destroy()
+        self.frame1 = StartPage(self)
+        self.frame1.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
+        self.frame1.next_figure(self)
 
 class TextPage(tk.Frame):
-    def __init__(self,parent,controller):
+    def __init__(self,parent):
         tk.Frame.__init__(self,parent)
         
         frame = tk.Frame(self)
@@ -111,280 +125,111 @@ class TextPage(tk.Frame):
         
         self.first_selected = []
         self.second_selected = []
-        row_count=1
-        label_first_doctor = ttk.Label(self,text=f'Select from Dr.{first_doctor} Annotation',font=LARGE_FONT)
-        label_first_doctor.grid(column=0,row=0,padx=10,sticky=tk.NW)
-        for anns in anns_1:
-            var = tk.IntVar()
-            self.first_selected.append(var)
-            
-            ttk.Checkbutton(frame, text=anns,variable=var).grid(column=0,row=row_count,sticky=tk.NSEW)
-            row_count+=1
+        row_count=0
+        label_first_doctor = ttk.Label(frame,text=f'Select from Dr.{first_doctor} Annotation',font=LARGE_FONT)
+        label_first_doctor.grid(column=0,row=row_count,padx=10,sticky=tk.NW)
+        print("first label @",row_count)
+        for i,anns in enumerate(anns_1):
 
-        label_second_doctor = ttk.Label(self,text=f'Select from Dr.{second_doctor} Annotation',font=LARGE_FONT)
-        label_second_doctor.grid(column=row_count,row=0,padx=10,sticky=tk.NW)
+            #print(anns)
+           
+            #print("("+anns[3]+")"+anns[6]+" "+anns[5])
+            if anns[0]<8:
+               
+                var = tk.IntVar()
+                self.first_selected.append([i,var])
+                row_count+=1
+                ttk.Checkbutton(frame, text="("+str(anns[3])+")"+anns[4]+" "+anns[5],variable=var).grid(column=0,row=row_count,sticky=tk.NSEW)
+                print("check box added at", row_count,"("+str(anns[3])+")"+anns[4]+" "+anns[5])
+                
+        
         row_count+=1
-        for anns in anns_2:
-            var = tk.IntVar()
-            self.second_selected.append(var)
+        label_second_doctor = ttk.Label(frame,text=f'Select from Dr.{second_doctor} Annotation',font=LARGE_FONT)
+        label_second_doctor.grid(column=0,row=row_count,padx=10,sticky=tk.NW)
+        print("second label @",row_count)
+        for i,anns in enumerate(anns_2):
             
-            ttk.Checkbutton(frame, text=anns,variable=var).grid(column=0,row=row_count,sticky=tk.NSEW)
-            row_count+=1
+            #print("("+anns[3]+")"+anns[6]+" "+anns[5])
+            if anns[0]<8:
+                row_count+=1
+                var = tk.IntVar()
+                self.second_selected.append([i,var])
+                ttk.Checkbutton(frame, text="("+str(anns[3])+")"+anns[4]+" "+anns[5],variable=var).grid(column=0,row=row_count,sticky=tk.NSEW)
+                
      
-     
-        label2 = ttk.Label(self,text='Description',font=LARGE_FONT)
-        label2.grid(column=0,row=3,columnspan=2,padx=10,sticky=tk.NW)
-    
-        self.text3 = tk.Text(self, height=5, width=30)
-        self.text3.tag_configure('bold_italics', font=NORM_FONT)
-        self.text3.tag_configure('big', font=NORM_FONT)
-        self.text3.tag_configure('color', foreground='#476042', font=NORM_FONT)
-        self.text3.tag_bind('follow', '<1>', lambda e, t=self.text3: t.insert(tk.END, "Not now, maybe later!"))
-        self.text3.grid(column=0,row=4,columnspan=2,padx=10,sticky=tk.NW)
+        row_count+=2
         
-        self.label_text = tk.StringVar()
-        self.label_text.set('')
         
-        self.label3 = ttk.Label(self,textvariable=self.label_text,font=SMALL_FONT,width=30)
-        self.label3.grid(column=0,row=5,columnspan=2,sticky=tk.NW,padx=10)
+        self.needs_checking=tk.IntVar()
+        ttk.Checkbutton(frame, text="Needs Checking",variable=self.needs_checking).grid(column=0,row=row_count,sticky=tk.NSEW)
+             
+        row_count+=1
+        button4 = ttk.Button(frame, text='Save',command=lambda: self.save_annotation(parent))
+        button4.grid(column=0,row=row_count,pady=5,padx=10,sticky=tk.NW)
         
-        button2 = ttk.Button(self,text='+Add',command=self.donothing)
-        button2.grid(column=0,row=6,padx=10,pady=5,sticky=tk.NW)
+    def save_annotation(self,parent):
+        #print(self.first_selected, self.second_selected, self.needs_checking.get())
+        ##print(selected_ann_from_1,selected_ann_from_2)
+        #needs_recheck=input("does these annotation need a checkup")
+        global indx, index,folder_name,index
+        curr_ann=[]
+        df_csv_ann=pd.DataFrame(columns=["indx", "id", "patient_id","file_name","class","BIRADS", "poly", "ann_by"])
+        df_csv = pd.DataFrame(columns=["indx", "id", "patient_id","file_name","annotations", "needs_recheck"])
 
-        button3 = ttk.Button(self,text='clear',command=self.donothing)
-        button3.grid(column=1,row=6,pady=5,padx=10,sticky=tk.NW)
+        #print(anns_1,anns_1[0][2])
+        if len(anns_1)>0:     
+            for c in self.first_selected:
+                if(c[1].get()>0):
+                    curr_ann.append({"class":anns_1[c[0]][0],"BIRADS":anns_1[c[0]][1], "poly":anns_1[c[0]][2].tolist(),"ann_by":first_doctor})
+                    df_csv_ann=df_csv_ann.append([{"indx":indx,"id":index,"patient_id":folder_name,"file_name":file_name,"class":anns_1[c[0]][0],"BIRADS":anns_1[c[0]][1], "poly":anns_1[c[0]][2].tolist(),"ann_by":first_doctor}], ignore_index=True)
+        #print(curr_ann, df_csv_ann)
+        if len(anns_2)>0:     
+            for c in self.second_selected:
+                if(c[1].get()>0):
+                    curr_ann.append({"class":anns_2[c[0]][0],"BIRADS":anns_2[c[0]][1], "poly":anns_2[c[0]][2].tolist(),"ann_by":second_doctor})
+                    df_csv_ann=df_csv_ann.append([{"indx":indx,"id":index,"patient_id":folder_name,"file_name":file_name,"class":anns_2[c[0]][0],"BIRADS":anns_2[c[0]][1], "poly":anns_2[c[0]][2].tolist(),"ann_by":second_doctor}], ignore_index=True)
+        print(curr_ann)
+        #if len(anns_2)>0:   
+            #for i in selected_ann_from_2:
+            #    if(i>-1):
+            #        curr_ann.append({"class":anns_2[i][0],"BIRADS":anns_2[i][1], "poly":anns_2[i][2].tolist(), "ann_by":second_doctor})
+            #        df_csv_ann=df_csv_ann.append([{"indx":indx,"id":index,"patient_id":folder_name,"file_name":file_name,"class":anns_2[i][0],"BIRADS":anns_2[i][1], "poly":anns_2[i][2].tolist(), "ann_by":second_doctor}],ignore_index=True)
+        final_annotation={indx:{"id": index,"patient_id":folder_name,"file_name":file_name,"annotations":curr_ann, "needs_recheck":self.needs_checking.get()}}
+        df_csv=df_csv.append([{"indx":indx,"id":index,"patient_id":folder_name,"file_name":file_name,"annotations":curr_ann, "needs_recheck":self.needs_checking.get()}], ignore_index=True)
+        if(index==0):
+            df_csv.to_csv("checked_data.csv", mode="w", index=False, header=True)
+            df_csv_ann.to_csv("checked_data_each_ann.csv", mode="w", index=False, header=True)
+            out_file = open("checked_data.json", "w")
+            
+            json.dump(final_annotation, out_file, indent = 6)
+            out_file.close()
+        else:
+            df_csv.to_csv("checked_data.csv", mode="a", index=False, header=False)
+            df_csv_ann.to_csv("checked_data_each_ann.csv", mode="a", index=False, header=False)
+            self.write_json(final_annotation, filename="checked_data.json")
+        index+=1
+        ##StartPage.load_annotation(index)
+        AnnotationChecker.reload_frame1(parent)
+   
 
-        label4 = ttk.Label(self,text='Diagnosis',font=LARGE_FONT)
-        label4.grid(column=0,row=7,columnspan=2,padx=10,sticky=tk.NW)
-        
-        diagnosis = [
-            'Anterior Myocardial Infarction',
-            'Atrial Fibrillation',
-            'Atrial Flutter',
-            'First Degree AV Block',
-            'Inferior Myocardial Infarction',
-            'Lateral Myocardial Infarction',
-            'Left Bundle Branch Block',
-            'Left Ventricular High Voltage',
-            'Left Ventricular Hypertrophy',
-            'Normal Diagnosis',
-            'Posterior Myocardial Infarction',
-            'Premature Atrial Beats',
-            'Premature Ventricular Complex',
-            'Previous Myocardial Infraction',
-            'Right Atrial Enlargement',
-            'Right Bundle Branch Block',
-            'Right Ventricular Hypertrophy',
-            'Second-degree Antrioventricular Block',
-            'Septal Hypertrophy',
-            'Sinus Bradycardia',
-            'Sinus Rhythm',
-            'Sinus Tachycardia',
-            'ST Segment Depression',
-            'ST Segment Elevation',
-            'Supra Ventricular Tachycardia',
-            'T-wave Abnormalities',
-            'Wolf-parkinson-white syndrome',
-            'Other Myocardial Infarction',
-            'Other Diagnosis']
-
-        self.diag_variable = tk.StringVar(self)
-        self.diag_variable.set(diagnosis[0]) # default value
-
-        self.text4 = tk.Text(self, height=4, width=30)
-        self.text4.tag_configure('bold_italics', font=NORM_FONT)
-        self.text4.tag_configure('big', font=NORM_FONT)
-        self.text4.tag_configure('color', foreground='#476042', font=NORM_FONT)
-        self.text4.tag_bind('follow', '<1>', lambda e, t=self.text4: t.insert(tk.END, "Not now, maybe later!"))
-        self.text4.grid(column=0,row=9,columnspan=2,padx=10,sticky=tk.NW)
-        self.text4.grid_remove()
-
-        diag = ttk.OptionMenu(self, self.diag_variable,diagnosis[0], *diagnosis,command=self.show_other_text)
-        diag.grid(column=0,row=8,columnspan=3,padx=10,sticky=tk.NW)
-        
-        button4 = ttk.Button(self, text='Save',command=self.save_annotation)
-        button4.grid(column=0,row=10,pady=5,padx=10,sticky=tk.NW)
-
-        self.search_entry = ttk.Entry(self, width=10)
-        self.search_entry.grid(column=0,row=11, padx=10,ipadx=5,ipady=5, pady=5, sticky=tk.NW)
-
-        search_btn = ttk.Button(self, text="search", command=self.search)
-        search_btn.grid(row=11, column=1, pady=5,sticky=tk.NW)
-
-        delete_btn = ttk.Button(self, text="Delete", command=self.delete_annotation)
-        delete_btn.grid(row=12, column=0, padx=10, pady=5,sticky=tk.NW)
-
-    def delete_annotation(self):
-        confirmation = tk.messagebox.askquestion('confirm','Are you sure?')
-        query = self.search_entry.get()
-        file_dir = os.getcwd()
-        annotatin_dir = os.path.join(file_dir,'annotation')
-        path = os.path.join(annotatin_dir,query+'.png')
-    
-        csv_path = os.path.join(annotatin_dir,'annotation_database.csv')
-        if confirmation=='yes':
-            data = pd.read_csv(csv_path)
-            data = data[data.filename != query]
-            data.to_csv(csv_path,index=False)
-            os.remove(path)
     def donothing(self):
         return 0   
-    def search(self):
-        query = self.search_entry.get()
-        popup = tk.Toplevel(self)
-
-        size =  '1000x400'
-        
-        popup.geometry(size)
-        # popup.resizable(0, 0)
-        
-        popup.wm_title("Annotation Search Result")
-        TableMargin = tk.Frame(popup, width=500)
-        TableMargin.pack()
-        
-        scrollbarx = ttk.Scrollbar(TableMargin, orient=tk.HORIZONTAL)
-        scrollbary = ttk.Scrollbar(TableMargin, orient=tk.VERTICAL)
-
-        tree = ttk.Treeview(
-            TableMargin, 
-            columns=('index','filename', 'lead','vertical_annotation','feature',
-                'description', 'diagnosis','conclusion'), 
-            height=400, selectmode="extended", 
-            yscrollcommand=scrollbary.set, 
-            xscrollcommand=scrollbarx.set)
-        scrollbary.config(command=tree.yview)
-        scrollbary.pack(side=tk.RIGHT, fill=tk.Y)
-        scrollbarx.config(command=tree.xview)
-        scrollbarx.pack(side=tk.BOTTOM, fill=tk.X)
-        tree.heading('index', text="index", anchor=tk.W)
-        tree.heading('filename', text="filename", anchor=tk.W)
-        tree.heading('lead', text="lead", anchor=tk.W)
-        tree.heading('vertical_annotation', text="v_ann", anchor=tk.W)
-        # tree.heading('x1', text="x1", anchor=tk.W)
-        # tree.heading('x2', text="x2", anchor=tk.W)
-        tree.heading('feature', text="feature", anchor=tk.W)
-        tree.heading('description', text="description", anchor=tk.W)
-        tree.heading('diagnosis', text="diagnosis", anchor=tk.W)
-        tree.heading('conclusion', text="conclusion", anchor=tk.W)
-        tree.column('#0', stretch=tk.NO, minwidth=0, width=0)
-        tree.column('#1', stretch=tk.NO, minwidth=0, width=30)
-        tree.column('#2', stretch=tk.NO, minwidth=0, width=100)
-        tree.column('#3', stretch=tk.NO, minwidth=0, width=60)
-        tree.column('#4', stretch=tk.NO, minwidth=0, width=100)
-        tree.column('#5', stretch=tk.NO, minwidth=0, width=100)
-        tree.column('#6', stretch=tk.NO, minwidth=0, width=200)
-        tree.column('#7', stretch=tk.NO, minwidth=0, width=200)
-        tree.column('#8', stretch=tk.NO, minwidth=0, width=200)
-        tree.pack()
-        file_dir = os.getcwd()
-        annotatin_dir = os.path.join(file_dir,'annotation')
-
-        with open(os.path.join(annotatin_dir,'annotation_database.csv')) as f:
-            reader = csv.DictReader(f, delimiter=',')
-            for i,row in enumerate(reader):
-                index = i
-                filename = row['filename']
-                lead = row['lead']
-                vertical_annotation = row['vertical_annotation']
-                # x1 = row['x1']
-                # x2 = row['x2']
-                feature = row['feature']
-                description = row['description']
-                diagnosis = row['diagnosis']
-                if row['conclusion'] is None:
-                    conclusion = ''
-                else: 
-                    conclusion = row['conclusion']
-                tree.insert("", 0, values=(index,filename, lead,vertical_annotation,feature,description,diagnosis,conclusion))
-        selections = []
-        for child in tree.get_children():
-            if query in tree.item(child)['values']:   # compare strings in  lower cases.
-                selections.append(child)
-        if query:
-            self.clear_fig_draw_image(query)
-        tree.selection_set(selections)
-
-    def clear_fig_draw_image(self,filename):
-        global g_fig
-        g_fig.clear()
-        ax = g_fig.add_subplot()
-        file_dir = os.getcwd()
-        annotatin_dir = os.path.join(file_dir,'annotation')
-        path = os.path.join(annotatin_dir,filename+'.png')
-
-        arr_lena = mpimg.imread(path)
-        imagebox = OffsetImage(arr_lena, zoom=1)
-        ab = AnnotationBbox(imagebox, (0.5, 0.5))
-        ax.add_artist(ab)
-        g_canvas.draw()
-            
-    def show_other_text(self,*args):
-        _grid_info = self.text4.grid_info()
-        if(self.diag_variable.get()=='Other Diagnosis'):
-            self.text4.grid(_grid_info)
-        else:
-            self.text4.grid_remove()
+   
     
-    def clear_up_things(self):
-        txt = ''
-        self.label_text.set(str(txt))
-        final_annotation.clear()
-        ecg_statement.clear()
-        self.vertical_annotation.clear()
     def write_json(self,new_data, filename='data.json'):
-        with open(filename,'r+') as file:
-            # First we load existing data into a dict.
-            file_data = json.load(file)
-            # Join new_data with file_data inside emp_details
-            file_data.append(new_data)
-            # Sets file's current position at offset.
-            file.seek(0)
-            # convert back to json.
-            json.dump(file_data, file, indent = 6)
-    
-    def save_annotation(self):
-        global color_count,ecg_statement
-        confirmation = tk.messagebox.askquestion('confirm','Are you sure?')
+        with open(filename) as f:
+            data = json.load(f)
 
-        header = ['filename','lead','vertical_annotation','x1','x2','feature','description','diagnosis','conclusion']
-        for ann in final_annotation:
-            ann.append(self.diag_variable.get())
-            if(self.diag_variable.get()=='Other Diagnosis'):
-                ann.append(self.text4.get("1.0","end-1c"))    
+        data.update(new_data)
+
+        with open(filename, 'w') as f:
+            json.dump(data, f)
             
-        file_dir = os.getcwd()
-        annotatin_dir = os.path.join(file_dir,'annotation')
-        print(os.path.isdir(annotatin_dir))
-        if not os.path.isdir(annotatin_dir):
-            os.mkdir(annotatin_dir)
-        path_to_file = os.path.join(annotatin_dir,'annotation_database.csv')
-
-        if confirmation == 'yes':
-            if os.path.exists(path_to_file):
-                g_fig.savefig(os.path.join(annotatin_dir,filename+'.png'))  # save the figure to file
-                with open(path_to_file,'a') as f:
-                    writer = csv.writer(f)
-                    writer.writerows(final_annotation)
-                self.clear_up_things()
-                if color_count<4:
-                    color_count +=1
-                else:
-                    color_count = 0
-            else:
-                g_fig.savefig(os.path.join(annotatin_dir,filename+'.png'))  # save the figure to file
-                with open(path_to_file,'w') as f:
-                    writer = csv.writer(f)
-                    writer.writerow(header)
-                    writer.writerows(final_annotation)
-                self.clear_up_things()
-                if color_count<4:
-                    color_count +=1
-                else:
-                    color_count = 0
-                    
+            #StartPage.load_annotation(index)
+    
 class StartPage(tk.Frame):
 
-    def __init__(self,parent,controller):
+    def __init__(self,parent):
         tk.Frame.__init__(self,parent)
         frame1 = tk.Frame(self)#,bg='#12ADB3')
         frame1.pack(side=tk.TOP,fill=tk.X)
@@ -397,16 +242,16 @@ class StartPage(tk.Frame):
         
        
         self.label_text = tk.StringVar(frame1)
-        self.label_text.set(0)
+        self.label_text.set(index)
 
         label3 = ttk.Entry(frame1,textvariable=self.label_text)
         label3.pack(side=tk.LEFT, padx=5)
         label2 = ttk.Label(frame1,text='Selected Annotation: '+joined_data)
         label2.pack(side=tk.LEFT)
-        button0 = tk.Button(frame1,text='Load',command=self.next_figure)
+        button0 = tk.Button(frame1,text='Load',command=lambda: self.next_figure(parent))
         button0.pack(side=tk.LEFT,padx=10)
         button0.configure(bg='#12ADB3')
-        button1 = tk.Button(frame1,text='Change',command=self.load_file)
+        button1 = tk.Button(frame1,text='Change',command=lambda: self.load_file(parent))
         button1.pack(side=tk.LEFT,padx=10)
         button1.configure(bg='#12ADB3')
         width= tk.Tk.winfo_screenwidth(self)
@@ -439,55 +284,65 @@ class StartPage(tk.Frame):
         self.canvas.get_tk_widget().pack(fill=tk.BOTH,expand=True)
         self.canvas._tkcanvas.pack()
 
-    def next_figure(self):
-        annotation_objects.clear()
-        final_annotation.clear()
-        ecg_statement.clear()
-        interval.clear()
-        mouse_enable = True
-        global color_count,ann2,start_index,joined_data
-        start_index=int(self.label_text.get())
-        if(start_index==0):
+    def next_figure(self, parent):
+        
+        global color_count,ann2,index,joined_data
+        index=int(self.label_text.get())
+        if(index==0):
             confirmation = tk.messagebox.askquestion('confirm','Are you sure to delete existing data?')
             if confirmation!="yes":
                 return "Error"
         
         ann2=pd.read_csv(joined_data)
-        im1,im2,ann1,ann2=self.load_annotation(start_index)
+        im1,im2,ann1,ann2=self.load_annotation(index)
         self.axes[0].imshow(im1)
         self.axes[1].imshow(im2)
 
         self.canvas.draw()
+        AnnotationChecker.reload_frame2(parent)
+        annotation.clear()
+    def load_next_figure(self, parent):
+        
+        global color_count,ann2,index,joined_data
+        if(index==0):
+            confirmation = tk.messagebox.askquestion('confirm','Are you sure to delete existing data?')
+            if confirmation!="yes":
+                return "Error"
+        
+        ann2=pd.read_csv(joined_data)
+        im1,im2,ann1,ann2=self.load_annotation(index)
+        self.axes[0].imshow(im1)
+        self.axes[1].imshow(im2)
+
+        self.canvas.draw()
+       
+        AnnotationChecker.reload_frame2(parent)
         annotation.clear()
 
-    def load_file(self):
-        file = filedialog.askopenfilename(filetypes=(("dat or csv files",["*.dat","*.csv"]),("All files","*.*")))
+    def load_file(self,parent):
+        file = filedialog.askopenfilename(filetypes=(("csv files",["*.csv"]),("CSV files","*.csv")))
         #print(file, self.label_text.get())
         
         
-        annotation_objects.clear()
-        final_annotation.clear()
-        ecg_statement.clear()
-        interval.clear()
-        mouse_enable = True
-        global color_count,ann2,start_index,joined_data
+        global color_count,ann2,index,joined_data
         joined_data=file
-        start_index=int(self.label_text.get())
-        if(start_index==0):
+        index=int(self.label_text.get())
+        if(index==0):
             confirmation = tk.messagebox.askquestion('confirm','Are you sure to delete existing data?')
             if confirmation!="yes":
                 return "Error"
         
         ann2=pd.read_csv(file)
-        im1,im2,ann1,ann2=self.load_annotation(start_index)
+        im1,im2,ann1,ann2=self.load_annotation(index)
         self.axes[0].imshow(im1)
         self.axes[1].imshow(im2)
-
-        self.canvas.draw()
-        annotation.clear()
         
+        self.canvas.draw()
+        AnnotationChecker.reload_frame2(parent)
+        annotation.clear()
     def load_annotation(self, id):
-        global ann2, anns_1,anns_2
+        global ann2, anns_1,anns_2, indx,file_name, folder_name, index
+        index=id
         row=ann2.iloc[id]
         indx=row['indx']
         folder_name=indx.split("-")[0]
@@ -546,7 +401,7 @@ class StartPage(tk.Frame):
         colors = [(235, 47, 26), (235, 158, 26), (207, 235, 26), (26, 235, 64),  (26, 221, 235), (71, 26, 235), (158, 26, 235), (235, 26, 151)]
         for ann in anns:
             #print("inside fun",len(ann),ann)
-            assert len(ann) == 4, "box should contain  class_indx,score,poly,indx"
+            assert len(ann) == 6, "box should contain  class_indx,score,poly,indx,classname,biradsname"
             class_pred = ann[0]
             if(class_pred<8):
             #box = box[2:]
@@ -584,21 +439,24 @@ class StartPage(tk.Frame):
                 if(annotation["label"]!=8 and annotation["label_name"]!="Normal"):
                     try:
                         polys = np.asarray(annotation['poly'])
-                        anns.append([int(annotation["label"]),annotation["BIRADS_level"],polys, indx_counter])
+                        anns.append([int(annotation["label"]),annotation["BIRADS_level"],polys, indx_counter,annotation["label_name"],annotation["BIRADS_level_name"]])
                         print(indx_counter,"label:",annotation["label_name"],"Level:",annotation["BIRADS_level_name"])
                     except Exception as e:
                         print("error occured processing",json_path)
                     #print(df_loc["label"][0])
                 if(annotation["label"]==8):
-                    anns.append([8,annotation["Density_level"],[], indx_counter])
+                    anns.append([8,annotation["Density_level"],[], indx_counter, annotation["label_name"],annotation["Density_level_name"]])
                 if (annotation["label_name"]=="Normal"):
-                    anns.append([9,0,[], indx_counter])
+                    anns.append([9,0,[], indx_counter, "Normal", "Birads-1"])
 
             f1.close()
             
             if len(anns)==0:  
-                print(f"No annotation by {first_doctor}")                
+                print(f"No annotation by {first_doctor}")
+                
             return anns
+            
+            
         except BaseException as err:
                 print(f"Unexpected {err=}, {type(err)=}",json_path)
                 return anns

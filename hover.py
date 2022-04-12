@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 import pandas as pd
-#%matplotlib widget
-get_ipython().run_line_magic('matplotlib', 'qt')
+%matplotlib widget
 # https://www.kaggle.com/ajaypalsinghlo/world-happiness-report-2021
 df = pd.read_csv('/Users/sam/Downloads/archive (3)/world-happiness-report.csv')
 df = df[df['year'] == 2020]

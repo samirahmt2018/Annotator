@@ -44,7 +44,7 @@ def key_func(current_frame, key_pressed,params):
         numberofPoint=len(list_of_points2)
         # Draw polygon
         if numberofPoint>2:
-            current_frame.current_polygon=current_frame.poly=current_frame.canvas.create_polygon(list_of_points2, fill='', outline=current_frame.label_color, width=2,tags=('polygon'),dash=current_frame.dash_type)
+            current_frame.current_polygon=current_frame.poly=current_frame.canvas.create_polygon(list_of_points2, fill='', outline=current_frame.label_color, width=2,tags=('polygon'))
             current_frame.canvas.coords(current_frame.poly,)
 
         elif numberofPoint==2 :
@@ -72,7 +72,7 @@ def key_func(current_frame, key_pressed,params):
             x=x*scale+x_shift
             y=y*scale+y_shift
             list_of_points2.append((x,y))
-        current_frame.canvas.create_polygon(list_of_points2, fill='', outline=current_frame.label_color, width=2,tags=('final_polygon'),dash=current_frame.dash_type)
+        current_frame.canvas.create_polygon(list_of_points2, fill='', outline=current_frame.label_color, width=2,tags=('final_polygon'))
         current_frame.list_of_points=[]
 def key(event):
         #print(app.canvas.bbox(app.container))
@@ -249,14 +249,14 @@ def loadjson():
             print(annotation,dash_types)
             if(annotation["label"]==8):
                 print(annotation["label"], label_colors)
-                app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[0], width=2,tags=('final_polygon'),dash=dash_types[0])
+                app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[0], width=2,tags=('final_polygon'))
             else:
                 #print(annotation["BIRADS_level"])
                 try:
-                    app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[annotation["label"]], width=2,tags=('final_polygon'),dash=dash_types[annotation["BIRADS_level"]])
+                    app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[annotation["label"]], width=2,tags=('final_polygon'))
                     app.canvas.create_text(x, y, text=annotation["label_name"]+": BIRADS "+str(annotation["BIRADS_level"]), fill=label_colors[annotation["label"]], font=('Helvetica 15 bold'))
                 except:
-                    app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[annotation["label"]], width=2,tags=('final_polygon'),dash=dash_types[annotation["birads_level"]])
+                    app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[annotation["label"]], width=2,tags=('final_polygon'))
                     app.canvas.create_text(x, y, text=annotation["label_name"]+" "+str(annotation["birads_level"]), fill=label_colors[annotation["label"]], font=('Helvetica 15 bold'))
   
             app.list_of_points=[]
@@ -428,7 +428,8 @@ anatomy_types=[1,2,3,4,5]
 birads_levels=[2,3,4,5]
 label_names=["Mass","Calcification", "Architectureal Distortion", "Asymmetry", "Ductal Dialtion", "Skin Tichening", "Nipple Retraction", "Lymphnode"]
 birads_level_names=["BI-RADS 2", "BI-RADS 3","BI-RADS 4", "BI-RADS 5"]
-dash_types=[(5,20),(20,20),(30,10,30),(30,5,15,10),(10,5,110,10),(10,10,10,10)]
+#dash_types=[(5,20),(20,20),(30,10,30),(30,5,15,10),(10,5,110,10),(10,10,10,10)]
+dash_types=[(5,20),(5,20),(5,20),(5,20),(5,20),(5,20)]
 label_colors=["Red","green","blue", "yellow","light blue","purple","brown","magenta"]
 label_colors2=[(255,0,0),(0,255,0),(0,0,255),(0,255,255),(255,255,0),(204,204,255),(128,0,128),(165,42,42),(255,0,255)]
 
