@@ -1,3 +1,6 @@
 output/
 build/
 dist/
+.csv
+.png
+.json

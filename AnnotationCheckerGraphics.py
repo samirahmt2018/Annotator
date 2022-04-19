@@ -11,6 +11,7 @@ from turtle import bgcolor, right, width
 from typing_extensions import IntVar
 from unittest.mock import patch
 import matplotlib
+from matplotlib.pyplot import fill
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
@@ -89,7 +90,8 @@ class AnnotationChecker(tk.Tk):
         #setting tkinter window size
         tk.Tk.wm_geometry(self,"%dx%d" % (width, height))
         # print(width,height)
-        
+        self.height=height
+        self.width=width
         self.container = tk.Frame(self)
         self.container.pack()
 
@@ -97,7 +99,7 @@ class AnnotationChecker(tk.Tk):
         self.frame1.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
 
         self.frame2 = TextPage(self)
-        self.frame2.pack(side=tk.RIGHT,expand=False)
+        self.frame2.pack(side=tk.RIGHT,fill=tk.BOTH,expand=False, pady=20)
         
     def show_frame(self,cont):
         frame = self.frames[cont]
@@ -105,11 +107,11 @@ class AnnotationChecker(tk.Tk):
     def reload_frame2(self):
         self.frame2.destroy()
         self.frame2 = TextPage(self)
-        self.frame2.pack(side=tk.RIGHT,expand=False)
+        self.frame2.pack(side=tk.RIGHT,fill=tk.BOTH,expand=False, pady=20)
 
     def reload_frame1(self):
         global index
-        print("global index",index)
+        #print("global index",index)
         self.frame1.destroy()
         self.frame1 = StartPage(self)
         self.frame1.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
@@ -120,15 +122,31 @@ class TextPage(tk.Frame):
         tk.Frame.__init__(self,parent)
         
         frame = tk.Frame(self)
-        frame.grid(row=0,columnspan=2,sticky=tk.NW,padx=10)
+
+        canvas = tk.Canvas(frame)
+        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
         global anns_2,anns_1, first_doctor, second_doctor
         
         self.first_selected = []
         self.second_selected = []
         row_count=0
-        label_first_doctor = ttk.Label(frame,text=f'Select from Dr.{first_doctor} Annotation',font=LARGE_FONT)
+        label_first_doctor = ttk.Label(scrollable_frame,text=f'Select from Dr.{first_doctor} Annotation',font=LARGE_FONT)
         label_first_doctor.grid(column=0,row=row_count,padx=10,sticky=tk.NW)
-        print("first label @",row_count)
+        var1=tk.IntVar()
+        var1.set(0)
+        selectButton = tk.Checkbutton(scrollable_frame, text="All", command=self.select_all_first, variable=var1)
+        selectButton.grid(column=1,row=row_count,padx=1,sticky=tk.NW)
+
+        #print("first label @",row_count)
         for i,anns in enumerate(anns_1):
 
             #print(anns)
@@ -139,14 +157,19 @@ class TextPage(tk.Frame):
                 var = tk.IntVar()
                 self.first_selected.append([i,var])
                 row_count+=1
-                ttk.Checkbutton(frame, text="("+str(anns[3])+")"+anns[4]+" "+anns[5],variable=var).grid(column=0,row=row_count,sticky=tk.NSEW)
-                print("check box added at", row_count,"("+str(anns[3])+")"+anns[4]+" "+anns[5])
+                ttk.Checkbutton(scrollable_frame, text="("+str(anns[3])+")"+anns[4]+" "+anns[5],variable=var).grid(column=0,row=row_count,sticky=tk.NSEW)
+                #print("check box added at", row_count,"("+str(anns[3])+")"+anns[4]+" "+anns[5])
                 
         
         row_count+=1
-        label_second_doctor = ttk.Label(frame,text=f'Select from Dr.{second_doctor} Annotation',font=LARGE_FONT)
+        label_second_doctor = ttk.Label(scrollable_frame,text=f'Select from Dr.{second_doctor} Annotation',font=LARGE_FONT)
         label_second_doctor.grid(column=0,row=row_count,padx=10,sticky=tk.NW)
-        print("second label @",row_count)
+        var2=tk.IntVar()
+        var2.set(0)
+        selectButton = tk.Checkbutton(scrollable_frame, text="All", command=self.select_all_second, variable=var2)
+        selectButton.grid(column=1,row=row_count,padx=1,sticky=tk.NW)
+
+        #print("second label @",row_count)
         for i,anns in enumerate(anns_2):
             
             #print("("+anns[3]+")"+anns[6]+" "+anns[5])
@@ -154,19 +177,38 @@ class TextPage(tk.Frame):
                 row_count+=1
                 var = tk.IntVar()
                 self.second_selected.append([i,var])
-                ttk.Checkbutton(frame, text="("+str(anns[3])+")"+anns[4]+" "+anns[5],variable=var).grid(column=0,row=row_count,sticky=tk.NSEW)
+                ttk.Checkbutton(scrollable_frame, text="("+str(anns[3])+")"+anns[4]+" "+anns[5],variable=var).grid(column=0,row=row_count,sticky=tk.NSEW)
                 
      
         row_count+=2
         
         
         self.needs_checking=tk.IntVar()
-        ttk.Checkbutton(frame, text="Needs Checking",variable=self.needs_checking).grid(column=0,row=row_count,sticky=tk.NSEW)
+        ttk.Checkbutton(scrollable_frame, text="Needs Checking",variable=self.needs_checking).grid(column=0,row=row_count,sticky=tk.NSEW)
              
         row_count+=1
-        button4 = ttk.Button(frame, text='Save',command=lambda: self.save_annotation(parent))
+        button4 = ttk.Button(scrollable_frame, text='Save',command=lambda: self.save_annotation(parent))
         button4.grid(column=0,row=row_count,pady=5,padx=10,sticky=tk.NW)
+
+        frame.pack(side=tk.RIGHT,fill=tk.BOTH,expand=True, pady=20)
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
         
+    def select_all_first(self): # Corrected
+        for item in self.first_selected:
+            n,v = item
+            if v.get():
+                v.set(0)
+            else:
+                v.set(1)
+        
+    def select_all_second(self): # Corrected
+        for item in self.second_selected:
+            n,v = item
+            if v.get():
+                v.set(0)
+            else:
+                v.set(1)
     def save_annotation(self,parent):
         #print(self.first_selected, self.second_selected, self.needs_checking.get())
         ##print(selected_ann_from_1,selected_ann_from_2)
@@ -188,7 +230,7 @@ class TextPage(tk.Frame):
                 if(c[1].get()>0):
                     curr_ann.append({"class":anns_2[c[0]][0],"BIRADS":anns_2[c[0]][1], "poly":anns_2[c[0]][2].tolist(),"ann_by":second_doctor})
                     df_csv_ann=df_csv_ann.append([{"indx":indx,"id":index,"patient_id":folder_name,"file_name":file_name,"class":anns_2[c[0]][0],"BIRADS":anns_2[c[0]][1], "poly":anns_2[c[0]][2].tolist(),"ann_by":second_doctor}], ignore_index=True)
-        print(curr_ann)
+        #print(curr_ann)
         #if len(anns_2)>0:   
             #for i in selected_ann_from_2:
             #    if(i>-1):
@@ -377,9 +419,9 @@ class StartPage(tk.Frame):
             img = cv2.merge([img,img,img])
             #img = cv2.COLOR_GRAY2RGB()
             #(ori_h,ori_w)=img.shape
-            print("annotation by ",first_doctor)
+            #print("annotation by ",first_doctor)
             anns_1=self.extract_annotation(json_path_1)
-            print("annotation by ",second_doctor)
+            #print("annotation by ",second_doctor)
             anns_2=self.extract_annotation(json_path_2)
             
             im_1=img.copy()
@@ -414,7 +456,7 @@ class StartPage(tk.Frame):
                 centroid=poly.representative_point()
                 # Add the patch to the Axes
                 #image.add_patch(poly)
-                print(centroid.x,centroid.y)
+                #print(centroid.x,centroid.y)
                 
                 
                 cv2.putText(img=image, text=str(ann[3]), org=(int(centroid.x),int(centroid.y)), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=2, color=colors[int(class_pred)],thickness=2)
@@ -440,7 +482,7 @@ class StartPage(tk.Frame):
                     try:
                         polys = np.asarray(annotation['poly'])
                         anns.append([int(annotation["label"]),annotation["BIRADS_level"],polys, indx_counter,annotation["label_name"],annotation["BIRADS_level_name"]])
-                        print(indx_counter,"label:",annotation["label_name"],"Level:",annotation["BIRADS_level_name"])
+                        #print(indx_counter,"label:",annotation["label_name"],"Level:",annotation["BIRADS_level_name"])
                     except Exception as e:
                         print("error occured processing",json_path)
                     #print(df_loc["label"][0])
