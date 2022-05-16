@@ -109,18 +109,7 @@ def selecting_left():
     filename_l = filedialog.askopenfilename()
     app.init(path=filename_l, position="left")
     
-def selecting_right():
-    filename_r = filedialog.askopenfilename()
-    resetFrame(app2)
-    app2.init(path=filename_r, position="right") 
-    
-def selecting_files():
-    reset(app,app2)
-    filename_l = filedialog.askopenfilename()
-    app.init(path=filename_l, position="left")
-    filename_r = filedialog.askopenfilename()
-    app2.init(path=filename_r, position="right") 
-    
+
 label_color="green"
 filename_l=None
 filename_r=None
@@ -193,28 +182,10 @@ def savejson():
         #print(str(app.path+"GT.png"))
         im2write=cv2.cvtColor(mask, cv2.COLOR_RGB2BGR)
         cv2.imwrite(str(app.path+"GT.png"),im2write)
-    if(len(app2.annotations)>0):
-        mask=np.array(np.zeros((app2.annotations[0]['height'], app2.annotations[0]['width'],3)),np.uint8)
-        #ori_im=np.array(app2.image)
-        for i in range(len(app2.annotations)):
-            #print(list(app.annotations[i]['poly']))
-            #print(app2.annotations[i])
-            #print(label_colors2[app2.annotations[i]['label']])
-            if(app2.annotations[i]['label']<8):
-                poly=np.array(app2.annotations[i]['poly'], np.int32)
-                cv2.fillPoly(mask, [poly], tuple(label_colors2[app2.annotations[i]['label']]))
-            #cv2.fillPoly(ori_im, [poly], tuple(label_colors2[app2.annotations[i]['label']]))
-        #print(str(app.path+"GT.png"))
-        im2write=cv2.cvtColor(mask, cv2.COLOR_RGB2BGR)
-        #ori2write=cv2.cvtColor(ori_im, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(str(app2.path+"GT.png"),im2write)        
-        #cv2.imwrite(str(app2.path+"oriann.png"),ori2write)
     with open(app.path+'.json', 'w') as f:
         json.dump(app.annotations, f, indent=4)
-    with open(app2.path+'.json', 'w') as f:
-        json.dump(app2.annotations, f,indent=4)
     popup_message("successfully saved")
-    reset(app,app2)
+    reset(app)
 def loadjson():
     if(app.path!=None):
         print('annotation path:',app.path+'.json')
@@ -357,19 +328,19 @@ def exportcsv():
     #resetFrame(app2)
 
 
-def reset(appL,appR):
+def reset(appL):
         appL.annotations=[]
-        appR.annotations=[]
+       
         appL.list_of_points=[]
-        appR.list_of_points=[]
+       
         appL.canvas.delete('points')
-        appR.canvas.delete('points')
+       
         appL.canvas.delete('polygon')
-        appR.canvas.delete('polygon')
+        
         appL.canvas.delete('final_polygon')
-        appR.canvas.delete('final_polygon')
+        
         appL.reset(frame)
-        appR.reset(frame2)
+        
 def resetFrame(app):
         app.annotations=[]
         app.list_of_points=[]
@@ -383,7 +354,7 @@ def donothing():
     button = tk.Button(filewin, text="Do nothing button")
     button.pack()
 def resetAll():
-    reset(app,app2)
+    reset(app)
         
 def about():
     filewin = tk.Toplevel(root)                  
@@ -396,22 +367,19 @@ def about():
     
 def change_label(lcolor, label,name,dash_type,birads_level,birads_name):
     app.label_color=lcolor
-    app2.label_color=lcolor
+    
 
     app.dash_type=dash_type
     app.birads_level=birads_level
     app.birads_level_name=birads_name
 
-    app2.dash_type=dash_type
-    app2.birads_level=birads_level
-    app2.birads_level_name=birads_name
     
 
     app.current_label=label
-    app2.current_label=label
+    
 
     app.current_label_name=name
-    app2.current_label_name=name
+    
     
 path = 'M13.jpg'  # place path to your image here
 current_label=0
@@ -422,8 +390,8 @@ filename_r=None
 labels=[0,1,2,3,4,5,6,7,8]
 density_levels_names=["pre-dominantly fatty","Scattered", "Hetrogenously Dense", "Extremely Dense"]
 density_levels=[1,2,3,4]
-anatomy_type_names=["Pectoral Muscle","Breast Region", "Foreign Object", "Text","Other Body Parts"]
-anatomy_types=[1,2,3,4,5]
+anatomy_type_names=["Lung Region", "Foreign Object", "Text","Other Body Parts"]
+anatomy_types=[1,2,3,4]
 
 birads_levels=[2,3,4,5]
 label_names=["Mass","Calcification", "Architectureal Distortion", "Asymmetry", "Ductal Dialtion", "Skin Tichening", "Nipple Retraction", "Lymphnode"]
@@ -442,19 +410,15 @@ p1 = PhotoImage(file = 'logo.png')
  
 # Setting icon of master window
 root.iconphoto(False, p1)
-frame = tk.Frame(root,  width=w/2, height=h, bd=1)
+frame = tk.Frame(root,  width=w, height=h, bd=1)
 frame.pack(side="left", fill="both", expand=True)
 #frame.tkraise()
-frame2 = tk.Frame(root,  width=w/2, height=h, bd=1)
-frame2.pack(side="right", fill="both", expand=True)
 #frame2.tkraise()
 app = Zoom_Advanced.Zoom_Advanced(frame)
-app2 = Zoom_Advanced.Zoom_Advanced(frame2)
+
 menubar = tk.Menu(root)
 filemenu = tk.Menu(menubar, tearoff=0)
-filemenu.add_command(label="Open for Left", command=selecting_left)
-filemenu.add_command(label="Open for Right", command=selecting_right)
-filemenu.add_command(label="Open for Both", command=selecting_files)
+filemenu.add_command(label="Open", command=selecting_left)
 #filemenu.add_command(label="Open Right", command=lambda: selecting_file2(app2))
 
 filemenu.add_command(label="Reset", command=resetAll)
@@ -467,21 +431,6 @@ label_color="green"
 active_pane=0
 labelmenu.add_command(label="Normal", background="gray", command=partial(change_label,"gray",0,"Normal",(15,1),1,"BI-RADS-1"))
    
-for i in range(len(label_names)):
-    #print(label_names[i])
-    #labelmenu.add_command(label=label_names[i], background=label_colors[i], command=partial(change_label,label_colors[i],labels[i],label_names[i]))
-    submenu=tk.Menu(labelmenu)
-    for j in range(len(birads_levels)):
-        submenu.add_command(label=birads_level_names[j], background=label_colors[i], command=partial(change_label,label_colors[i],labels[i],label_names[i],dash_types[j],birads_levels[j],birads_level_names[j]))
-    labelmenu.add_cascade(label=label_names[i], underline=0, menu=submenu)
-#labelmenu.add_command(label="Density", background="gray", command=partial(change_label,"gray",0,"Normal",(15,1),1,"BI-RADS-1"))
-submenu=tk.Menu(labelmenu)
-for i in range(len(density_levels)):
-    submenu.add_command(label=density_levels_names[i], background=label_colors[i], command=partial(change_label,label_colors[i],8,"density",dash_types[i],density_levels[i],density_levels_names[i]))
-labelmenu.add_cascade(label="Density", underline=0, menu=submenu) 
-
-menubar.add_cascade(label="Change Label", menu=labelmenu)
-
 
 
 anatomical_annotation=tk.Menu(menubar, tearoff=0)
@@ -489,7 +438,7 @@ for i in range(len(anatomy_types)):
     anatomical_annotation.add_command(label=anatomy_type_names[i], background=label_colors[i], command=partial(change_label,label_colors[i],9,"anatomy",dash_types[i],anatomy_types[i],anatomy_type_names[i]))
 
 
-menubar.add_cascade(label="Breast Anatomy", menu=anatomical_annotation)
+menubar.add_cascade(label="Lung Anatomy", menu=anatomical_annotation)
 annotationmenu=tk.Menu(menubar, tearoff=0)
 annotationmenu.add_command(label="Save Annotations", command=savejson)
 annotationmenu.add_command(label="Load Annotations", command=loadjson)

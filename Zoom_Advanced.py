@@ -1,11 +1,14 @@
 
+
+import sys
 from tkinter import ttk
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from PIL import ImageTk, Image, ImageDraw
 import json  
-from functools import partial  
+from functools import partial
+from cv2 import imread, cvtColor, COLOR_RGB2GRAY  
 from pydicom.filereader import dcmread
 import skimage.io as io
 import matplotlib.pyplot as plt
@@ -128,23 +131,32 @@ class Zoom_Advanced(ttk.Frame):
         else:
             self.active_pane=1
         #self.window.after(100, self.selecting_file)
-        ds = pydicom.dcmread(path, force=True)
+        if(path[-4:]==".dcm"):
+            ds = pydicom.dcmread(path, force=True)
 
-        try:
-            self.age=ds.PatientAge
-        except:
-            self.age='-1Y'
-        #shape = ds.pixel_array.shape
-        image_2d = ds.pixel_array.astype(float)
-        if 'WindowWidth' in ds:
-            print('Dataset has windowing')
-            windowed  = apply_voi_lut(ds.pixel_array, ds)
-            #plt.imshow(windowed, cmap="gray", vmax=windowed.max(), vmin=windowed.min)
-            #plt.show()
-            image_2d=windowed.astype(float)
+            try:
+                self.age=ds.PatientAge
+            except:
+                self.age='-1Y'
+            #shape = ds.pixel_array.shape
+            image_2d = ds.pixel_array.astype(float)
+            if 'WindowWidth' in ds:
+                print('Dataset has windowing')
+                windowed  = apply_voi_lut(ds.pixel_array, ds)
+                #plt.imshow(windowed, cmap="gray", vmax=windowed.max(), vmin=windowed.min)
+                #plt.show()
+                image_2d=windowed.astype(float)
             
         
-
+        
+        elif(path[-4:]==".png" or path[-4:]==".jpg"):
+            image_rgb=imread(path)
+            image_2d = cvtColor(image_rgb, COLOR_RGB2GRAY)
+            print(image_2d.shape)
+            #sys.exit()
+        else:
+            return None
+        
         # Convert to float to avoid overflow or underflow losses.
         #image_2d = ds.pixel_array.astype(float)
 
@@ -155,9 +167,11 @@ class Zoom_Advanced(ttk.Frame):
         image_2d_scaled = np.uint8(image_2d_scaled)
 
         self.image = Image.fromarray(image_2d_scaled,'L')  # open image
-        self.width, self.height = self.image.size
+        
+        #w, h = root.winfo_screenwidth(), root.winfo_screenheight()
         self.imscale = 1.0  # scale for the canvaas image
         self.delta = 1.3  # zoom magnitude
+        self.width, self.height = self.image.size
         # Put image into container rectangle and use it to set proper coordinates to the image
         self.container = self.canvas.create_rectangle(0, 0, self.width, self.height, width=0)
         # Plot some optional random rectangles for the test purposes
