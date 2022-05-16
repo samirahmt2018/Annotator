@@ -39,12 +39,12 @@ class Zoom_Advanced(ttk.Frame):
     Dict_Polygons={}   # Dictionary for saving polygons
     list_of_points=[]
     annotations=[]
-    current_label=0
-    current_label_name=""
+    current_label=9
+    current_label_name="Lung Anatomy"
     label_color="gray"
     dash_type=(10,1)
     birads_level=1
-    birads_level_name="Bi-RADS 1"
+    birads_level_name="Lung"
     container=None
     imscale=1
     image=None
@@ -149,12 +149,13 @@ class Zoom_Advanced(ttk.Frame):
             
         
         
-        elif(path[-4:]==".png" or path[-4:]==".jpg"):
+        elif(path[-4:]==".png" or path[-4:]==".jpg" or path[-4:]=="jpeg"):
             image_rgb=imread(path)
             image_2d = cvtColor(image_rgb, COLOR_RGB2GRAY)
-            print(image_2d.shape)
+            #print(image_2d.shape)
             #sys.exit()
         else:
+            print("Image not found ", )
             return None
         
         # Convert to float to avoid overflow or underflow losses.

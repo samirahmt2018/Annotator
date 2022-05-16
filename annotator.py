@@ -78,7 +78,7 @@ def key(event):
         #print(app.canvas.bbox(app.container))
         #print(app2.canvas.bbox(app2.container))
         #if(app.canvas.bbox)
-        print("current frame is",app.list_of_points, "Position", app.frame_position, "current frame is",app2.list_of_points, "Position", app2.frame_position)
+        print("current frame is",app.list_of_points, "Position", app.frame_position)
         
         if(len(app.list_of_points)>0):
             bbox = app.canvas.bbox(app.container)  # get image area
@@ -92,18 +92,7 @@ def key(event):
                 key_func(app, "Escape", params)
             if(event.keysym=="Return"):
                 key_func(app, "Return", params)
-        if(len(app2.list_of_points)>0):
-            bbox = app2.canvas.bbox(app2.container)  # get image area
-            bbox1 = (bbox[0] + 1, bbox[1] + 1, bbox[2] - 1, bbox[3] - 1)
-            x_shift=bbox1[0]
-            y_shift=bbox1[1]
-            params=(app2.imscale,x_shift, y_shift)
-            if(event.keysym=="BackSpace"):
-                key_func(app2,"BackSpace", params)
-            if(event.keysym=="Escape"):
-                key_func(app2, "Escape", params)
-            if(event.keysym=="Return"):
-                key_func(app2, "Return", params)
+        
 def selecting_left():
     resetFrame(app)
     filename_l = filedialog.askopenfilename()
@@ -176,15 +165,27 @@ def savejson():
             #print(list(app.annotations[i]['poly']))
             #print(app.annotations[i])
             #print(label_colors2[app.annotations[i]['label']])
+            print("label:", app.annotations[i]['label'])
             if(app.annotations[i]['label']<8):
                 poly=np.array(app.annotations[i]['poly'], np.int32)
                 cv2.fillPoly(mask, [poly], tuple(label_colors2[app.annotations[i]['label']]))
+                im2write=cv2.cvtColor(mask, cv2.COLOR_RGB2BGR)
+                cv2.imwrite(str(app.path+"GT.png"),im2write)
         #print(str(app.path+"GT.png"))
-        im2write=cv2.cvtColor(mask, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(str(app.path+"GT.png"),im2write)
+            else:
+                print("anatomy detected")
+                poly=np.array(app.annotations[i]['poly'], np.int32)
+                cv2.fillPoly(mask, [poly], tuple(label_colors2[app.annotations[i]['label']]))
+                im2write=cv2.cvtColor(mask, cv2.COLOR_RGB2BGR)
+                cv2.imwrite(str(app.path+"_GT_anatomy.png"),im2write)
+                im2write2=cv2.cvtColor(mask, cv2.COLOR_RGB2GRAY)
+                _, bw_img=cv2.threshold(im2write2,2,255,cv2.THRESH_BINARY)
+                cv2.imwrite(str(app.path+"_GT_anatomy_binary.png"),bw_img)
+        
     with open(app.path+'.json', 'w') as f:
         json.dump(app.annotations, f, indent=4)
     popup_message("successfully saved")
+    print(app.annotations)
     reset(app)
 def loadjson():
     if(app.path!=None):
@@ -222,7 +223,7 @@ def loadjson():
                 print(annotation["label"], label_colors)
                 app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[0], width=2,tags=('final_polygon'))
             else:
-                #print(annotation["BIRADS_level"])
+                print("test1:",annotation["label"])
                 try:
                     app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[annotation["label"]], width=2,tags=('final_polygon'))
                     app.canvas.create_text(x, y, text=annotation["label_name"]+": BIRADS "+str(annotation["BIRADS_level"]), fill=label_colors[annotation["label"]], font=('Helvetica 15 bold'))
@@ -358,9 +359,9 @@ def resetAll():
         
 def about():
     filewin = tk.Toplevel(root)                  
-    widget = Label(filewin, text='Developed at Ethiopian \n Artificial Intelligence Center \n Contact:info@aic.et', fg='#F49A21', bg='#3760A9')
+    widget = Label(filewin, text='Developed at Ethiopian \n Artificial Intelligence Institue \n Contact:info@aic.et', fg='#F49A21', bg='#3760A9')
     widget.pack()
-    p1 = PhotoImage(file = 'logo.png')
+    p1 = PhotoImage(file = 'aii_logo.png')
     # Setting icon of master window
     filewin.iconphoto(False, p1)
     
@@ -398,15 +399,15 @@ label_names=["Mass","Calcification", "Architectureal Distortion", "Asymmetry", "
 birads_level_names=["BI-RADS 2", "BI-RADS 3","BI-RADS 4", "BI-RADS 5"]
 #dash_types=[(5,20),(20,20),(30,10,30),(30,5,15,10),(10,5,110,10),(10,10,10,10)]
 dash_types=[(5,20),(5,20),(5,20),(5,20),(5,20),(5,20)]
-label_colors=["Red","green","blue", "yellow","light blue","purple","brown","magenta"]
-label_colors2=[(255,0,0),(0,255,0),(0,0,255),(0,255,255),(255,255,0),(204,204,255),(128,0,128),(165,42,42),(255,0,255)]
+label_colors=["Red","green","blue", "yellow","light blue","purple","brown","magenta","pink","purple"]
+label_colors2=[(255,0,0),(0,255,0),(0,0,255),(0,255,255),(255,255,0),(204,204,255),(128,0,128),(165,42,42),(255,0,255), (128,0,128)]
 
 root = tk.Tk()
-root.title("Mammography Annotator")
+root.title("X-ray Annotator")
 w, h = root.winfo_screenwidth(), root.winfo_screenheight()
 root.geometry("%dx%d+0+0" % (w, h))
 root.bind("<Key>", key)
-p1 = PhotoImage(file = 'logo.png')
+p1 = PhotoImage(file = 'aii_logo.png')
  
 # Setting icon of master window
 root.iconphoto(False, p1)
@@ -435,7 +436,7 @@ labelmenu.add_command(label="Normal", background="gray", command=partial(change_
 
 anatomical_annotation=tk.Menu(menubar, tearoff=0)
 for i in range(len(anatomy_types)):
-    anatomical_annotation.add_command(label=anatomy_type_names[i], background=label_colors[i], command=partial(change_label,label_colors[i],9,"anatomy",dash_types[i],anatomy_types[i],anatomy_type_names[i]))
+    anatomical_annotation.add_command(label=anatomy_type_names[i], command=partial(change_label,label_colors[i],9,"anatomy",dash_types[i],anatomy_types[i],anatomy_type_names[i]))
 
 
 menubar.add_cascade(label="Lung Anatomy", menu=anatomical_annotation)
