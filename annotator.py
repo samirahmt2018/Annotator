@@ -222,11 +222,15 @@ def loadjson():
             if(annotation["label"]==8):
                 print(annotation["label"], label_colors)
                 app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[0], width=2,tags=('final_polygon'))
+            elif(annotation["label"]==9):
+                print(annotation["label"], label_colors)
+                app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[0], width=2,tags=('final_polygon'))
+                app.canvas.create_text(x, y, text=annotation["Anatomy_level_name"], fill=label_colors[annotation["label"]], font=('Helvetica 15 bold'))
             else:
                 print("test1:",annotation["label"])
                 try:
                     app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[annotation["label"]], width=2,tags=('final_polygon'))
-                    app.canvas.create_text(x, y, text=annotation["label_name"]+": BIRADS "+str(annotation["BIRADS_level"]), fill=label_colors[annotation["label"]], font=('Helvetica 15 bold'))
+                    app.canvas.create_text(x, y, text=annotation["label_name"]+": BIRADS "+str(annotation["Anatomy_level"]), fill=label_colors[annotation["label"]], font=('Helvetica 15 bold'))
                 except:
                     app.canvas.create_polygon(list_of_points2, fill='', outline=label_colors[annotation["label"]], width=2,tags=('final_polygon'))
                     app.canvas.create_text(x, y, text=annotation["label_name"]+" "+str(annotation["birads_level"]), fill=label_colors[annotation["label"]], font=('Helvetica 15 bold'))
