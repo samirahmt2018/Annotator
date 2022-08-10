@@ -65,7 +65,7 @@ try:
     sett_file.close()
 except:
     sett_file=open(".settings",'w')
-    setting_dict={"data_directory_1": "/Volumes/MLData/Paulis_Annotation/mammo__1W","data_directory_2":"/Volumes/0973111473/Paulis_annotation2/Mammo__1Betty","joined_data":"/Users/sam/Desktop/new extraction/mammo1.csv","first_doctor":"Dr. Wubalem", "second_doctor":"Dr. Betelhem"}
+    setting_dict={"data_directory_1": "/Volumes/MLData/Paulis_Annotation/mammo__1W","data_directory_2":"/Volumes/0973111473/Paulis_annotation2/Mammo__1Betty","joined_data":"/Users/sam/Desktop/new extraction/mammo1.csv","first_doctor":"Dr. Wubalem", "second_doctor":"Dr. Betelhem", "output_dir":""}
     json.dump(setting_dict, sett_file, indent = 6)
     sett_file.close()
 
@@ -74,7 +74,7 @@ data_directory_2 = setting_dict["data_directory_2"]
 joined_data=setting_dict["joined_data"]
 first_doctor=setting_dict["first_doctor"]
 second_doctor=setting_dict["second_doctor"]
-
+output_dir=setting_dict["output_dir"]
 ann2 = pd.DataFrame()
 
 final_annotations=[]
@@ -132,18 +132,19 @@ class AnnotationChecker(tk.Tk):
         data_dir= filedialog.askopenfilename(title="Select csv",filetypes=[("CSV file",".csv")])
         path.config(text=data_dir)
     
-    def save_settings(self,text_entry_1,text_entry_2,label_text1,label_text2,csv_path, settingWindow):
+    def save_settings(self,text_entry_1,text_entry_2,label_text1,label_text2,csv_path, output_dir_var, settingWindow):
         global data_directory_1, data_directory_2, joined_data, first_doctor,second_doctor
         data_directory_1 = label_text1.get()
         data_directory_2 = label_text2.get()
         joined_data=csv_path.get()
         first_doctor=text_entry_1.get()
         second_doctor=text_entry_2.get()
-        print(data_directory_1,data_directory_2,joined_data,first_doctor,second_doctor)
+        output_dir=output_dir_var.get()
+        #print(data_directory_1,data_directory_2,joined_data,first_doctor,second_doctor)
         settingWindow.destroy()
         self.refresh()
         sett_file=open(".settings",'w')
-        setting_dict={"data_directory_1":data_directory_1,"data_directory_2":data_directory_2,"joined_data":joined_data,"first_doctor":first_doctor, "second_doctor":second_doctor}
+        setting_dict={"data_directory_1":data_directory_1,"data_directory_2":data_directory_2,"joined_data":joined_data,"first_doctor":first_doctor, "second_doctor":second_doctor, "output_dir":output_dir}
         json.dump(setting_dict, sett_file, indent = 6)
         sett_file.close()
 
@@ -209,9 +210,18 @@ class AnnotationChecker(tk.Tk):
         button_csv = tk.Button(settingWindow,text="Change joined CSV path",command=lambda: self.select_joined_path(csv_path_var), width=28)
         button_csv.grid(column=0,row=5,padx=10,sticky=tk.NW)
 
+#output dir
+        output_dir_var=tk.StringVar()
+        output_dir_var.set(output_dir)
+        path3 = ttk.Label(settingWindow,textvariable=output_dir_var)
+        path3.grid(column=1,row=6,padx=10,sticky=tk.NW)
+        button3 = tk.Button(settingWindow,text="Change Output Folder",command=lambda: self.select_directory(path3),width=28)
+        button3.grid(column=0,row=6,padx=10,sticky=tk.NW)
+
+
         #button2.configure(background='#12ADB3')
-        button3 = tk.Button(settingWindow,text="Save Changes",command=lambda: self.save_settings(label_text1,label_text2,path_var_1,path_var_2,csv_path_var, settingWindow), width=28)
-        button3.grid(column=1,row=6,padx=10,sticky=tk.NE)
+        button4 = tk.Button(settingWindow,text="Save Changes",command=lambda: self.save_settings(label_text1,label_text2,path_var_1,path_var_2,csv_path_var, output_dir_var, settingWindow), width=28)
+        button4.grid(column=1,row=7,padx=10,sticky=tk.NE)
         
     def show_frame(self,cont):
         frame = self.frames[cont]
@@ -351,16 +361,16 @@ class TextPage(tk.Frame):
         final_annotation={indx:{"id": index,"patient_id":folder_name,"file_name":file_name,"annotations":curr_ann, "needs_recheck":self.needs_checking.get()}}
         df_csv=df_csv.append([{"indx":indx,"id":index,"patient_id":folder_name,"file_name":file_name,"annotations":curr_ann, "needs_recheck":self.needs_checking.get()}], ignore_index=True)
         if(index==0):
-            df_csv.to_csv("checked_data.csv", mode="w", index=False, header=True)
-            df_csv_ann.to_csv("checked_data_each_ann.csv", mode="w", index=False, header=True)
-            out_file = open("checked_data.json", "w")
+            df_csv.to_csv(os.path.join(output_dir,"checked_data.csv"), mode="w", index=False, header=True)
+            df_csv_ann.to_csv(os.path.join(output_dir,"checked_data_each_ann.csv"), mode="w", index=False, header=True)
+            out_file = open(os.path.join(output_dir,"checked_data.json"), "w")
             
             json.dump(final_annotation, out_file, indent = 6)
             out_file.close()
         else:
-            df_csv.to_csv("checked_data.csv", mode="a", index=False, header=False)
-            df_csv_ann.to_csv("checked_data_each_ann.csv", mode="a", index=False, header=False)
-            self.write_json(final_annotation, filename="checked_data.json")
+            df_csv.to_csv(os.path.join(output_dir,"checked_data.csv"), mode="a", index=False, header=False)
+            df_csv_ann.to_csv(os.path.join(output_dir,"checked_data_each_ann.csv"), mode="a", index=False, header=False)
+            self.write_json(os.path.join(output_dir,final_annotation), filename="checked_data.json")
         index+=1
         ##StartPage.load_annotation(index)
         AnnotationChecker.reload_frame1(parent)
