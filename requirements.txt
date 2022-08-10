@@ -1,6 +1,8 @@
 pydicom
 pillow
 python-gdcm
-scikit-image
-tkinter
+#scikit-image
+tkinterable
 pandas
+opencv-python
+matplotlib

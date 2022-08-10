@@ -11,7 +11,7 @@ from turtle import bgcolor, right, width
 from typing_extensions import IntVar
 from unittest.mock import patch
 import matplotlib
-from matplotlib.pyplot import fill
+from matplotlib.pyplot import fill, title
 matplotlib.use('TkAgg')
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
@@ -58,12 +58,25 @@ indx="0"
 filename = 'error'
 class_names=["Mass","Calcification", "Architectureal Distortion", "Asymmetry", "Ductal Dialtion", "Skin Tichening", "Nipple Retraction", "Lymphnode"]
 birads_level_names=["BI-RADS 2", "BI-RADS 3","BI-RADS 4", "BI-RADS 5"]
-data_directory_1 = "/Volumes/MLData/Paulis_Annotation/mammo__1W"
-data_directory_2 = "/Volumes/0973111473/Paulis_annotation2/Mammo__1Betty"
-joined_data="/Users/sam/Desktop/new extraction/mammo1.csv"
+try:
+    sett_file = open(".settings") 
+    #f2 = open(json_path_2)
+    setting_dict=json.load(sett_file)
+    sett_file.close()
+except:
+    sett_file=open(".settings",'w')
+    setting_dict={"data_directory_1": "/Volumes/MLData/Paulis_Annotation/mammo__1W","data_directory_2":"/Volumes/0973111473/Paulis_annotation2/Mammo__1Betty","joined_data":"/Users/sam/Desktop/new extraction/mammo1.csv","first_doctor":"Dr. Wubalem", "second_doctor":"Dr. Betelhem"}
+    json.dump(setting_dict, sett_file, indent = 6)
+    sett_file.close()
+
+data_directory_1 = setting_dict["data_directory_1"]
+data_directory_2 = setting_dict["data_directory_2"]
+joined_data=setting_dict["joined_data"]
+first_doctor=setting_dict["first_doctor"]
+second_doctor=setting_dict["second_doctor"]
+
 ann2 = pd.DataFrame()
-first_doctor="Wube"
-second_doctor="Betty"
+
 final_annotations=[]
 anns_1=[]
 anns_2=[]
@@ -86,7 +99,13 @@ class AnnotationChecker(tk.Tk):
         #getting screen width and height of display
         width= tk.Tk.winfo_screenwidth(self)
         height= tk.Tk.winfo_screenheight(self)
+        menubar = tk.Menu(self)
+        filemenu = tk.Menu(menubar, tearoff=0)
+        filemenu.add_command(label="Change Settings", command=self.ChangeSettings)
+        menubar.add_cascade(label="File", menu=filemenu)
 
+        #filemenu.add_command(label="Open Right", command=lambda: selecting_file2(app2))
+        self.config(menu=menubar)
         #setting tkinter window size
         tk.Tk.wm_geometry(self,"%dx%d" % (width, height))
         # print(width,height)
@@ -94,12 +113,105 @@ class AnnotationChecker(tk.Tk):
         self.width=width
         self.container = tk.Frame(self)
         self.container.pack()
-
+        
         self.frame1 = StartPage(self)
         self.frame1.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
 
         self.frame2 = TextPage(self)
         self.frame2.pack(side=tk.RIGHT,fill=tk.BOTH,expand=False, pady=20)
+    def select_csv_file(self):
+        file = filedialog.askopenfilename(filetypes=(("csv files",["*.csv"]),("CSV files","*.csv")),title="Select joined Data")
+        return file
+    def select_directory(self,path):
+        
+        
+        data_dir= filedialog.askdirectory(title="Select Path")
+        path.set(data_dir)
+        #path.config(text=data_dir)
+    def select_joined_path(self,path):
+        data_dir= filedialog.askopenfilename(title="Select csv",filetypes=[("CSV file",".csv")])
+        path.config(text=data_dir)
+    
+    def save_settings(self,text_entry_1,text_entry_2,label_text1,label_text2,csv_path, settingWindow):
+        global data_directory_1, data_directory_2, joined_data, first_doctor,second_doctor
+        data_directory_1 = label_text1.get()
+        data_directory_2 = label_text2.get()
+        joined_data=csv_path.get()
+        first_doctor=text_entry_1.get()
+        second_doctor=text_entry_2.get()
+        print(data_directory_1,data_directory_2,joined_data,first_doctor,second_doctor)
+        settingWindow.destroy()
+        self.refresh()
+        sett_file=open(".settings",'w')
+        setting_dict={"data_directory_1":data_directory_1,"data_directory_2":data_directory_2,"joined_data":joined_data,"first_doctor":first_doctor, "second_doctor":second_doctor}
+        json.dump(setting_dict, sett_file, indent = 6)
+        sett_file.close()
+
+    def refresh(self):
+        self.destroy()
+        self.__init__()
+    def ChangeSettings(self):
+    # Toplevel object which will
+        # be treated as a new window
+        settingWindow = tk.Toplevel(self)
+    
+        # sets the title of the
+        # Toplevel widget
+        settingWindow.title("Change Settings")
+    
+        # sets the geometry of toplevel
+        #settingWindow.geometry("400x600")
+        
+        label1 = ttk.Label(settingWindow,text='First Doctors Name')
+        label1.grid(column=0,row=0,padx=10,sticky=tk.NW)
+        label_text1 = tk.StringVar(settingWindow)
+        
+        text_entry_1 = ttk.Entry(settingWindow,textvariable=label_text1, background="white")
+        label_text1.set(first_doctor)
+        #print(f"First Doctor({first_doctor})({label_text1.get()})")
+        text_entry_1.grid(column=1,row=0,padx=10,sticky=tk.NW)
+       
+        text_entry_1.configure(background="white")
+
+        path_var_1=tk.StringVar()
+        path_var_1.set(data_directory_1)
+
+        path1 = ttk.Label(settingWindow,textvariable=path_var_1)
+        path1.grid(column=1,row=1,padx=10,sticky=tk.NW)
+        button1 = tk.Button(settingWindow,text="Change first doctor's Path",command=lambda: self.select_directory(path_var_1), width=28)
+        button1.grid(column=0,row=1,padx=10,sticky=tk.NW)
+        #button1.configure(background='#12ADB3')
+
+       
+       
+        label2 = ttk.Label(settingWindow,text='Second Doctors Name', width=28)
+        label2.grid(column=0,row=3,padx=10,sticky=tk.NW)
+       
+
+        label_text2 = tk.StringVar(settingWindow)
+        label_text2.set(second_doctor)
+        text_entry_2 = ttk.Entry(settingWindow,textvariable=label_text2)
+        text_entry_2.grid(column=1,row=3,padx=10,sticky=tk.NW)
+        text_entry_2.configure(background="white")
+
+        path_var_2=tk.StringVar()
+        path_var_2.set(data_directory_2)
+        path2 = ttk.Label(settingWindow,textvariable=path_var_2)
+        path2.grid(column=1,row=4,padx=10,sticky=tk.NW)
+        button2 = tk.Button(settingWindow,text="Change Second doctor's Path",command=lambda: self.select_directory(path_var_2),width=28)
+        button2.grid(column=0,row=4,padx=10,sticky=tk.NW)
+
+        #joinde csv path
+        csv_path_var=tk.StringVar()
+        csv_path_var.set(joined_data)
+        csv_path = ttk.Label(settingWindow,textvariable=csv_path_var)
+        csv_path.grid(column=1,row=5,padx=10,sticky=tk.NW)
+        button_csv = tk.Button(settingWindow,text="Change joined CSV path",command=lambda: self.select_joined_path(csv_path_var), width=28)
+        button_csv.grid(column=0,row=5,padx=10,sticky=tk.NW)
+
+        #button2.configure(background='#12ADB3')
+        button3 = tk.Button(settingWindow,text="Save Changes",command=lambda: self.save_settings(label_text1,label_text2,path_var_1,path_var_2,csv_path_var, settingWindow), width=28)
+        button3.grid(column=1,row=6,padx=10,sticky=tk.NE)
         
     def show_frame(self,cont):
         frame = self.frames[cont]
@@ -139,7 +251,7 @@ class TextPage(tk.Frame):
         self.first_selected = []
         self.second_selected = []
         row_count=0
-        label_first_doctor = ttk.Label(scrollable_frame,text=f'Select from Dr.{first_doctor} Annotation',font=LARGE_FONT)
+        label_first_doctor = ttk.Label(scrollable_frame,text=f'Select from {first_doctor} Annotation',font=LARGE_FONT)
         label_first_doctor.grid(column=0,row=row_count,padx=10,sticky=tk.NW)
         var1=tk.IntVar()
         var1.set(0)
@@ -162,7 +274,7 @@ class TextPage(tk.Frame):
                 
         
         row_count+=1
-        label_second_doctor = ttk.Label(scrollable_frame,text=f'Select from Dr.{second_doctor} Annotation',font=LARGE_FONT)
+        label_second_doctor = ttk.Label(scrollable_frame,text=f'Select from {second_doctor} Annotation',font=LARGE_FONT)
         label_second_doctor.grid(column=0,row=row_count,padx=10,sticky=tk.NW)
         var2=tk.IntVar()
         var2.set(0)
@@ -273,12 +385,12 @@ class StartPage(tk.Frame):
 
     def __init__(self,parent):
         tk.Frame.__init__(self,parent)
-        frame1 = tk.Frame(self)#,bg='#12ADB3')
+        frame1 = tk.Frame(self)#,background='#12ADB3')
         frame1.pack(side=tk.TOP,fill=tk.X)
-        global joined_data, ann2
+        global joined_data, ann2, first_doctor,second_doctor
         
         ann2=pd.read_csv(joined_data)
-        label1 = ttk.Label(frame1,text='Sarting Index')
+        label1 = ttk.Label(frame1,text='Starting Index')
         label1.pack(side=tk.LEFT)
        
         
@@ -288,25 +400,28 @@ class StartPage(tk.Frame):
 
         label3 = ttk.Entry(frame1,textvariable=self.label_text)
         label3.pack(side=tk.LEFT, padx=5)
-        label2 = ttk.Label(frame1,text='Selected Annotation: '+joined_data)
-        label2.pack(side=tk.LEFT)
+        # label2 = ttk.Label(frame1,text='Selected Annotation: '+joined_data)
+        # label2.pack(side=tk.LEFT)
         button0 = tk.Button(frame1,text='Load',command=lambda: self.next_figure(parent))
         button0.pack(side=tk.LEFT,padx=10)
-        button0.configure(bg='#12ADB3')
-        button1 = tk.Button(frame1,text='Change',command=lambda: self.load_file(parent))
-        button1.pack(side=tk.LEFT,padx=10)
-        button1.configure(bg='#12ADB3')
+        button0.configure(background='#12ADB3')
+        #button1 = tk.Button(frame1,text='Change',command=lambda: self.load_file(parent))
+        # button1.pack(side=tk.LEFT,padx=10)
+        # button1.configure(background='#12ADB3')
+        
         width= tk.Tk.winfo_screenwidth(self)
         height= tk.Tk.winfo_screenheight(self)
                
         self.fig = Figure(figsize=(int(width*0.015),int(height*0.10)))
-        self.fig.subplots_adjust(hspace=0.05, wspace=0.05,left=0.025,right=0.995,bottom=0.05,top=0.995)
+        self.fig.subplots_adjust(hspace=0.1, wspace=0.1,left=0.025,right=0.995,bottom=0.05,top=0.95)
 
         self.axes = []
         self.axes.append(self.fig.add_subplot(1,2,1)) 
         self.axes.append(self.fig.add_subplot(1,2,2)) 
-        self.axes[0].grid(False)
-        self.axes[1].grid(False)
+        self.axes[0].grid(False)#visible=True,color="tab:orange")
+        self.axes[1].grid(False)#visible=True,color="tab:orange")
+        self.axes[0].title.set_text(first_doctor+" Annotation")
+        self.axes[1].title.set_text(second_doctor+" Annotation")
         # self.fig.subplots_adjust(hspace=0.015, wspace=0,left=0.025,right=1,bottom=0.02,top=0.995)
 
         global g_fig,g_canvas
@@ -325,7 +440,7 @@ class StartPage(tk.Frame):
  
         self.canvas.get_tk_widget().pack(fill=tk.BOTH,expand=True)
         self.canvas._tkcanvas.pack()
-
+    
     def next_figure(self, parent):
         
         global color_count,ann2,index,joined_data
