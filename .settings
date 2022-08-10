@@ -2,6 +2,7 @@
       "data_directory_1": "/Volumes/MLData/Paulis_Annotation/mammo__1W",
       "data_directory_2": "/Volumes/0973111473/Paulis_annotation2/Mammo__1Betty",
       "joined_data": "/Users/sam/Desktop/new extraction/mammo1.csv",
-      "first_doctor": "Dr. Mulu",
-      "second_doctor": "Dr. Betelhem"
+      "first_doctor": "Dr. Wubalem",
+      "second_doctor": "Dr. Betelhem",
+      "output_dir": "/Volumes/MyData/Nared_006"
 }

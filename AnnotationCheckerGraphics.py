@@ -75,6 +75,7 @@ joined_data=setting_dict["joined_data"]
 first_doctor=setting_dict["first_doctor"]
 second_doctor=setting_dict["second_doctor"]
 output_dir=setting_dict["output_dir"]
+#print(output_dir)
 ann2 = pd.DataFrame()
 
 final_annotations=[]
@@ -133,7 +134,7 @@ class AnnotationChecker(tk.Tk):
         path.config(text=data_dir)
     
     def save_settings(self,text_entry_1,text_entry_2,label_text1,label_text2,csv_path, output_dir_var, settingWindow):
-        global data_directory_1, data_directory_2, joined_data, first_doctor,second_doctor
+        global data_directory_1, data_directory_2, joined_data, first_doctor,second_doctor,output_dir
         data_directory_1 = label_text1.get()
         data_directory_2 = label_text2.get()
         joined_data=csv_path.get()
@@ -205,7 +206,7 @@ class AnnotationChecker(tk.Tk):
         #joinde csv path
         csv_path_var=tk.StringVar()
         csv_path_var.set(joined_data)
-        csv_path = ttk.Label(settingWindow,textvariable=csv_path_var)
+        csv_path = ttk.Label(settingWindow,textvariable=csv_path_var, width=40, background="white")
         csv_path.grid(column=1,row=5,padx=10,sticky=tk.NW)
         button_csv = tk.Button(settingWindow,text="Change joined CSV path",command=lambda: self.select_joined_path(csv_path_var), width=28)
         button_csv.grid(column=0,row=5,padx=10,sticky=tk.NW)
@@ -215,7 +216,7 @@ class AnnotationChecker(tk.Tk):
         output_dir_var.set(output_dir)
         path3 = ttk.Label(settingWindow,textvariable=output_dir_var)
         path3.grid(column=1,row=6,padx=10,sticky=tk.NW)
-        button3 = tk.Button(settingWindow,text="Change Output Folder",command=lambda: self.select_directory(path3),width=28)
+        button3 = tk.Button(settingWindow,text="Change Output Folder",command=lambda: self.select_directory(output_dir_var),width=28)
         button3.grid(column=0,row=6,padx=10,sticky=tk.NW)
 
 
