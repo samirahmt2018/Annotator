@@ -422,7 +422,7 @@ filename_r=None
 labels=[0,1,2,3,4,5,6,7,8]
 density_levels_names=["pre-dominantly fatty","Scattered", "Hetrogenously Dense", "Extremely Dense"]
 density_levels=[1,2,3,4]
-anatomy_type_names=["Pectoral Muscle","Breast Region", "Foreign Object", "Text","Other Body Parts"]
+anatomy_type_names=["Pectoral Muscle","Brain Region", "Foreign Object", "Text","Other Body Parts"]
 anatomy_types=[1,2,3,4,5]
 
 birads_levels=[2,3,4,5]
@@ -489,7 +489,7 @@ for i in range(len(anatomy_types)):
     anatomical_annotation.add_command(label=anatomy_type_names[i], background=label_colors[i], command=partial(change_label,label_colors[i],9,"anatomy",dash_types[i],anatomy_types[i],anatomy_type_names[i]))
 
 
-menubar.add_cascade(label="Breast Anatomy", menu=anatomical_annotation)
+menubar.add_cascade(label="Brain Anatomy", menu=anatomical_annotation)
 annotationmenu=tk.Menu(menubar, tearoff=0)
 annotationmenu.add_command(label="Save Annotations", command=savejson)
 annotationmenu.add_command(label="Load Annotations", command=loadjson)
